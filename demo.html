@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#115e59">
+<title>Metta Sepsis Quality Registry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: teal app bar + tab row, single 960px column of sections; form = numbered sections mirroring F/M-MED/002 */
+:root {
+  --bg: #f3faf9;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --ink: #1e293b;
+  --ink-2: #475569;
+  --muted: #64748b;
+  --line: #dbe7e5;
+  --bar: #115e59;
+  --bar-2: rgba(19, 78, 74, .6);
+  --bar-ink: #ffffff;
+  --bar-ink-2: #ccfbf1;
+  --accent: #0d9488;
+  --accent-btn: #0d9488;
+  --accent-soft: #ccfbf1;
+  --good: #059669;  --good-bg: #d1fae5;
+  --warn: #c2410c;  --warn-bg: #ffedd5;
+  --bad: #e11d48;   --bad-bg: #ffe4e6;
+  --na: #64748b;    --na-bg: #f1f5f9;
+  --info: #2563eb;  --info-bg: #dbeafe;
+  --focus: #0284c7;
+  --s1: #0ea594;
+  --s2: #e8606a;
+  --f-body: "Sarabun", "Leelawadee UI", "Tahoma", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --f-mono: var(--f-body);
+  --r: 12px;
+  --shadow: 0 1px 3px rgba(13, 148, 136, .08), 0 1px 2px rgba(15, 23, 42, .04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1514; --surface: #12201f; --surface-2: #182a28; --ink: #e2ece9; --ink-2: #a9bdb8; --muted: #7f9893; --line: #24393a;
+    --bar: #0b3b38; --bar-2: rgba(4, 30, 28, .6); --bar-ink: #f0fdfa; --bar-ink-2: #99d8cf; --accent: #2dd4bf; --accent-btn: #0d9488; --accent-soft: #123430;
+    --good: #34d399; --good-bg: #0f2e24; --warn: #fbbf24; --warn-bg: #33270e; --bad: #f87171; --bad-bg: #3a1a1a; --na: #94a3b8; --na-bg: #1c2b2a; --info: #93c5fd; --info-bg: #172d4d; --focus: #38bdf8; --s1: #2c9f8d; --s2: #cc4560; --shadow: none;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1514; --surface: #12201f; --surface-2: #182a28; --ink: #e2ece9; --ink-2: #a9bdb8; --muted: #7f9893; --line: #24393a;
+    --bar: #0b3b38; --bar-2: rgba(4, 30, 28, .6); --bar-ink: #f0fdfa; --bar-ink-2: #99d8cf; --accent: #2dd4bf; --accent-btn: #0d9488; --accent-soft: #123430;
+    --good: #34d399; --good-bg: #0f2e24; --warn: #fbbf24; --warn-bg: #33270e; --bad: #f87171; --bad-bg: #3a1a1a; --na: #94a3b8; --na-bg: #1c2b2a; --info: #93c5fd; --info-bg: #172d4d; --focus: #38bdf8; --s1: #2c9f8d; --s2: #cc4560; --shadow: none;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* App bar: brand left, nav pill right (stacks on narrow screens) */
+.appbar { box-shadow: 0 2px 8px rgba(0,0,0,.15); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bar); color: var(--bar-ink); }
+.appbar-in { max-width: 1240px; margin: 0 auto; padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 0; }
+.brand-mark { width: 44px; height: 44px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); display: grid; place-items: center; flex: none; }
+.brand-mark svg { width: 24px; height: 24px; }
+.brand-mark svg path:first-child { fill: #115e59; }
+.brand-text { min-width: 0; }
+.brand h1 { font-size: 21px; font-weight: 700; line-height: 1.25; letter-spacing: -.01em; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.form-code { font-size: 12px; font-weight: 600; letter-spacing: .04em; background: #0d9488; color: #ccfbf1; padding: 2px 8px; border-radius: 6px; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+.brand p { margin: 2px 0 0; font-size: 13px; color: var(--bar-ink-2); line-height: 1.45; }
+.tabs { flex: none; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; background: var(--bar-2); padding: 5px; border-radius: 14px; max-width: 100%; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: none; display: inline-flex; align-items: center; gap: 7px; background: none; border: 0; color: var(--bar-ink-2); padding: 8px 14px; font-weight: 500; font-size: 14.5px; cursor: pointer; border-radius: 10px; transition: background .2s, color .2s, box-shadow .3s; }
+.tab svg { width: 17px; height: 17px; flex: none; }
+.tab:hover { background: rgba(255,255,255,.08); color: #fff; }
+.tab[aria-selected="true"] { color: #fff; background: #0d9488; font-weight: 600; box-shadow: 0 0 0 1px rgba(94, 234, 212, .45), 0 0 14px rgba(45, 212, 191, .55), 0 0 28px rgba(45, 212, 191, .25); animation: tabGlow .9s ease-out; }
+@keyframes tabGlow { 0% { box-shadow: 0 0 0 1px rgba(94,234,212,.9), 0 0 4px rgba(45,212,191,.9), 0 0 0 rgba(45,212,191,0); } 45% { box-shadow: 0 0 0 1px rgba(94,234,212,.9), 0 0 22px rgba(45,212,191,.95), 0 0 44px rgba(45,212,191,.5); } 100% { box-shadow: 0 0 0 1px rgba(94,234,212,.45), 0 0 14px rgba(45,212,191,.55), 0 0 28px rgba(45,212,191,.25); } }
+.who { font-size: 12px; color: var(--bar-ink-2); margin-left: 10px; }
+.who::before { content: '•'; margin-right: 10px; }
+.who:empty { display: none; }
+.who button { background: none; border: 0; color: var(--bar-ink); text-decoration: underline; cursor: pointer; padding: 0; font-size: 12px; }
+.tab .short { display: none; }
+@media (max-width: 1080px) { .brand { flex: 1 1 100%; } .tabs { flex: 1 1 100%; } }
+@media (max-width: 720px) { .brand h1 { font-size: 17px; } .brand p { font-size: 12px; white-space: normal; } .tab { padding: 7px 10px; font-size: 13px; gap: 5px; } .tab .full { display: none; } .tab .short { display: inline; } }
+
+main { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 60px; }
+.demo-note { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 8px 12px; font-size: 13px; margin-bottom: 14px; }
+
+/* Controls */
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+select, input[type=text], input[type=number], input[type=date], input[type=time], input[type=password], textarea {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 40px; width: 100%;
+}
+textarea { min-height: 70px; resize: vertical; }
+.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { background: none; border: 0; border-radius: 7px; padding: 5px 11px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: #0d9488; color: #fff; box-shadow: 0 0 10px rgba(20, 184, 166, .45); }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; min-height: 40px; }
+.btn.primary { background: #0d9488; border-color: #0d9488; color: #fff; }
+.btn.primary:hover { filter: brightness(1.05); box-shadow: 0 0 14px rgba(20, 184, 166, .45); }
+.btn.primary:active, .seg button:active, .btn:active { transform: translateY(1px); }
+.btn.danger { color: var(--bad); }
+.btn:disabled { opacity: .55; cursor: default; }
+.link { background: none; border: 0; color: var(--accent); font-weight: 600; cursor: pointer; padding: 0; }
+
+/* Sections */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; box-shadow: var(--shadow); }
+.stack { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+.panel h2 { font-size: 16px; font-weight: 700; }
+.panel .sub { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+.phead { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.kpi { box-shadow: var(--shadow); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 4px; align-content: start; }
+.kpi .lab { font-size: 13px; color: var(--ink-2); line-height: 1.35; min-height: 2.7em; }
+.kpi .val { font-size: 30px; color: var(--ink); font-weight: 700; line-height: 1.1; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.kpi .val small { font-size: 14px; font-weight: 500; color: var(--muted); font-family: var(--f-body); }
+.kpi .fr { font-size: 12.5px; color: var(--muted); }
+.kpi .flag { font-size: 12px; color: var(--warn); }
+
+/* Report table */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+thead th { background: var(--surface-2); font-size: 12.5px; color: var(--ink-2); font-weight: 600; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+td.n { text-align: right; white-space: nowrap; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+th.n { text-align: right; }
+.report td:first-child { color: var(--muted); width: 2em; }
+.notes { margin: 10px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 13px; }
+
+/* Charts */
+.multiples { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.chart { position: relative; }
+.chart h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart .gl { stroke: var(--line); stroke-width: 1; }
+.chart .ax { fill: var(--muted); font-size: 10.5px; font-family: var(--f-body); }
+.chart .ln { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .ar { fill: var(--accent); opacity: .10; }
+.chart .pt { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.chart .hit { fill: transparent; cursor: default; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--surface); font-size: 12px; padding: 6px 9px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -110%); line-height: 1.4; }
+.bars { display: grid; gap: 8px; }
+.bar-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(50px, 1fr) 92px; gap: 10px; align-items: center; font-size: 14px; }
+.bar-track { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; }
+.bar-row .n { white-space: nowrap; text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 13px; }
+
+/* Status pills */
+.pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 99px; padding: 2px 9px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.pill.pass { background: var(--good-bg); color: var(--good); }
+.pill.fail { background: var(--bad-bg); color: var(--bad); }
+.pill.missing { background: var(--warn-bg); color: var(--warn); }
+.pill.na { background: var(--na-bg); color: var(--na); }
+.pill.open { background: var(--warn-bg); color: var(--warn); }
+.pills { display: flex; flex-wrap: wrap; gap: 5px; }
+
+/* Case list */
+.cases { display: grid; gap: 8px; }
+.case { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; cursor: pointer; text-align: left; width: 100%; }
+.case:hover { border-color: var(--accent); }
+.case .t { font-weight: 700; }
+.case .m { color: var(--muted); font-size: 13px; }
+.case .pills { grid-column: 1 / -1; }
+.empty { color: var(--muted); text-align: center; padding: 28px 10px; }
+
+/* Form */
+.form-top { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--hdr, 96px)); z-index: 10; background: var(--bg); padding-block: 8px; margin-top: -8px; }
+.live { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 8px; }
+.live .pills .pill { font-size: 12.5px; padding: 3px 10px; }
+fieldset { box-shadow: var(--shadow); border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); margin: 0; padding: 14px 16px 16px; min-width: 0; }
+legend { font-weight: 700; font-size: 15px; padding: 0 6px; }
+legend .who { font-weight: 500; color: var(--muted); font-size: 12.5px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px 14px; }
+.f { display: grid; gap: 4px; min-width: 0; align-content: start; }
+.f > label, .f > .lb { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+.f .hint { font-size: 12px; color: var(--muted); }
+.req::after { content: " *"; color: var(--bad); }
+.dt { display: grid; grid-template-columns: 1.3fr 1fr auto; gap: 6px; }
+.dt .now { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 0 8px; font-size: 12px; cursor: pointer; color: var(--ink-2); }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.chk { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; cursor: pointer; background: var(--surface); font-size: 14px; }
+.chk input { margin: 0; accent-color: var(--accent); width: 16px; height: 16px; }
+.chk:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.subhead { font-size: 13px; font-weight: 700; color: var(--ink-2); margin: 14px 0 8px; text-transform: none; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
+.msg { font-size: 13.5px; }
+.msg.err { color: var(--bad); }
+.msg.ok { color: var(--good); }
+.vlist { margin: 0; padding-left: 18px; font-size: 13px; display: grid; gap: 2px; }
+.vlist.warn { color: var(--warn); }
+.vlist.err { color: var(--bad); }
+.msg .btn { margin-left: 8px; min-height: 32px; padding: 4px 10px; }
+
+/* Login */
+.login { max-width: 380px; margin: 8vh auto 0; }
+.login .panel { display: grid; gap: 12px; }
+
+/* Definitions */
+.defs dt { font-weight: 700; margin-top: 12px; }
+.defs dd { margin: 4px 0 0; color: var(--ink-2); }
+
+
+/* Dashboard additions */
+.filters { display: grid; grid-template-columns: minmax(150px, 1fr) auto minmax(150px, 1fr) minmax(150px, 1fr); gap: 12px 14px; align-items: end; }
+@media (max-width: 860px) { .filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .filters .f:nth-child(2) { grid-column: 1 / -1; } }
+@media (max-width: 480px) { .filters { grid-template-columns: minmax(0, 1fr); } }
+.kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .kpis { grid-template-columns: 1fr 1fr; gap: 8px; } .kpi { padding: 12px; } .bu-ticks b:nth-child(2), .bu-ticks b:nth-child(3), .bu-ticks b:nth-child(5) { display: none; } .bu-row, .bu-axis { grid-template-columns: minmax(0, 1.3fr) minmax(60px, 1fr) 50px; } }
+.khead { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.kic { width: 34px; height: 34px; padding: 7px; border-radius: 10px; color: var(--accent); background: var(--accent-soft); flex: none; }
+.kpi.shock .lab, .kpi.shock .val { color: var(--bad); }
+.kpi.shock { border-color: color-mix(in srgb, var(--bad) 20%, var(--line)); background: color-mix(in srgb, var(--bad-bg) 55%, var(--surface)); }
+.kpi.shock .kic { color: var(--bad); background: #fff; }
+.kpi.low .kic { color: var(--bad); background: var(--bad-bg); }
+.kpi.ok .kic { color: var(--good); background: var(--good-bg); }
+.kpi.low .val { color: var(--bad); }
+.kpi.ok .val { color: var(--good); }
+.kpi .lab { min-height: 0; }
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.trio { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.duo > *, .trio > * { min-width: 0; }
+.chart .b1 { fill: var(--s1); }
+.chart .b2 { fill: var(--s2); }
+.chart .ln2 { fill: none; stroke: var(--ink-2); stroke-width: 2; }
+.chart .pt2 { fill: var(--ink-2); stroke: var(--surface); stroke-width: 2; }
+.chart .tg { stroke: var(--muted); stroke-dasharray: 4 4; stroke-width: 1; }
+.chart rect.hit { fill: transparent; }
+.chart rect.hit:hover { fill: var(--ink); opacity: .04; }
+.legend { display: flex; gap: 12px; font-size: 12.5px; color: var(--ink-2); flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.sw.s1 { background: var(--s1); } .sw.s2 { background: var(--s2); }
+.bundle { display: grid; gap: 9px; }
+.bu-row, .bu-axis { display: grid; grid-template-columns: minmax(120px, 190px) 1fr 58px; gap: 10px; align-items: center; font-size: 13.5px; }
+.bu-group { font-size: 12.5px; font-weight: 700; color: var(--muted); margin-top: 4px; }
+.bu-row.key { font-weight: 700; border-top: 1px solid var(--line); padding-top: 9px; }
+.bu-track { position: relative; height: 16px; background: var(--surface-2); border-radius: 4px; }
+.bu-fill { height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; }
+.bu-fill.low { background: var(--s2); }
+.bu-target { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 1.5px dashed var(--ink-2); }
+.bu-row .n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; }
+.bu-ticks { position: relative; height: 16px; }
+.bu-ticks b { position: absolute; transform: translateX(-50%); font-weight: 400; font-size: 10.5px; color: var(--muted); }
+
+/* Case registry table */
+.reg-head { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; }
+.reg-head h2 { font-size: 17px; }
+.reg-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1 1 360px; justify-content: flex-end; }
+.search { position: relative; flex: 1 1 240px; max-width: 380px; }
+.search svg { position: absolute; left: 12px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); color: var(--muted); }
+.search input { padding-left: 38px; border-radius: 10px; }
+.cnt-badge { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 99px; background: var(--surface-2); color: var(--ink-2); font-size: 11.5px; line-height: 18px; text-align: center; }
+.seg button[aria-pressed="true"] .cnt-badge { background: rgba(255,255,255,.25); color: #fff; }
+.reg-table { padding: 0; overflow: hidden; }
+.tbl-wrap.reg { border: 0; border-radius: 0; }
+.reg table { min-width: 860px; font-size: 13px; }
+.reg th.act, .reg td.act { padding-right: 16px; width: 1%; }
+.reg thead th { background: var(--surface-2); font-size: 13px; color: var(--ink); font-weight: 700; padding: 11px 10px; }
+.reg td { padding: 9px 10px; vertical-align: middle; color: var(--ink-2); white-space: nowrap; }
+.reg thead th { white-space: nowrap; vertical-align: middle; }
+.reg td.hn { color: var(--ink); font-weight: 700; }
+.reg td.pname { color: var(--ink); font-weight: 500; }
+.reg .nowrap { white-space: nowrap; }
+.reg tbody tr { cursor: pointer; transition: background .12s; }
+.reg tbody tr:hover, .reg tbody tr:focus-visible { background: var(--accent-soft); outline: none; }
+.reg th.act, .reg td.act { text-align: right; }
+.btn-sm { display: inline-block; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); color: var(--accent); background: var(--surface); border-radius: 8px; padding: 3px 10px; font-size: 12.5px; font-weight: 600; }
+.reg tbody tr:hover .btn-sm { background: var(--accent-btn); color: #fff; border-color: var(--accent-btn); }
+.tag { display: inline-block; border-radius: 99px; padding: 2px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--na-bg); color: var(--na); border: 1px solid transparent; }
+.tag.shock { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
+.tag.sepsis { background: var(--info-bg); color: var(--info); }
+.tag.b-pass { background: var(--good-bg); color: var(--good); }
+.tag.b-fail { background: var(--bad-bg); color: var(--bad); }
+.tag.b-missing { background: var(--warn-bg); color: var(--warn); }
+.tag.ok { background: var(--info-bg); color: var(--info); }
+.tag.dead { background: var(--bad-bg); color: var(--bad); }
+.tag.open { background: var(--warn-bg); color: var(--warn); }
+.reg-foot { padding: 10px 16px; font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); }
+
+/* Dashboard entrance animation (presenting) */
+@keyframes growY { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes growX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.anim .kpi, .anim .panel { animation: fadeUp .5s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--d, 0) * 60ms); }
+.anim .chart rect.b1, .anim .chart rect.b2 { transform-box: fill-box; transform-origin: 50% 100%; animation: growY .7s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(400ms + var(--i, 0) * 60ms); }
+.anim .chart rect.b2 { animation-delay: calc(750ms + var(--i, 0) * 60ms); }
+.anim .chart .ln, .anim .chart .ln2 { stroke-dasharray: 1; animation: draw 1.4s ease-out both; animation-delay: 900ms; }
+.anim .chart .ar, .anim .chart .pt, .anim .chart .pt2 { animation: fadeIn .5s ease-out both; animation-delay: 1.6s; }
+.anim .bu-fill, .anim .bar-fill { transform-origin: 0 50%; animation: growX .9s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(500ms + var(--i, 0) * 70ms); }
+.replay { display: inline-flex; align-items: center; gap: 6px; }
+.replay svg { width: 14px; height: 14px; }
+@media (prefers-reduced-motion: reduce) { .anim *, .tab { animation: none !important; } }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 8px; font-size: 14px; z-index: 50; }
+.loading { color: var(--muted); padding: 40px 0; text-align: center; }
+@media (max-width: 520px) {
+  .dt { grid-template-columns: 1fr 1fr; }
+  .dt .now { grid-column: 1 / -1; min-height: 32px; }
+  .kpi .val { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+
+<header class="appbar">
+  <div class="appbar-in">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="#115e59" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.1C.9 8.6 3 5 6.5 5c2 0 3.5 1.1 4.5 2.6l1 1.4 1-1.4C14 6.1 15.5 5 17.5 5 21 5 23.1 8.6 21.6 11.9 19.5 16.4 12 21 12 21z"/><path d="M4.5 12h4l1.5-3 3 6 1.5-3h5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>Metta Sepsis Quality Registry <span class="form-code">F/M-MED/002</span></h1>
+        <p>แบบฟอร์มเก็บข้อมูลและตัวชี้วัด Severe Sepsis / Septic Shock • รพ.เมตตาประชารักษ์ (วัดไร่ขิง)<span class="who" id="who"></span></p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs"></nav>
+  </div>
+</header>
+
+<main id="app"><div class="loading">กำลังโหลด…</div></main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ============ Backend bridge ============ */
+const IS_GAS = typeof google !== 'undefined' && google.script && google.script.run;
+function call(fn, ...args) {
+  if (IS_GAS) {
+    return new Promise((res, rej) => {
+      google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(new Error(e && e.message ? e.message : String(e))))[fn](...args);
+    });
+  }
+  return Demo[fn](...args);
+}
+
+/* ============ Lookups ============ */
+const WARDS = ['ER', 'หอผู้ป่วยในชาย', 'หอผู้ป่วยในหญิง', 'หอผู้ป่วยพิเศษ', 'ICU', 'อื่นๆ'];
+const SOURCES = [
+  ['resp', 'Respiratory tract'], ['gi', 'GI tract'], ['uti', 'Urinary tract'], ['cns', 'CNS'],
+  ['ocular', 'Ocular'], ['skin', 'Skin & soft tissue'], ['unknown', 'ไม่ทราบแหล่ง'], ['other', 'อื่นๆ']
+];
+const SRC = Object.fromEntries(SOURCES);
+const ATBS = ['Ceftriaxone', 'Piperacillin/tazobactam (Tazocin)', 'Meropenem', 'Ceftazidime', 'Ertapenem', 'Levofloxacin', 'Ciprofloxacin', 'Amoxicillin/clavulanate', 'Clindamycin', 'Metronidazole', 'Azithromycin', 'Doxycycline', 'Vancomycin', 'Colistin'];
+const FLUIDS = ['NSS', 'Acetar', 'RLS', 'อื่นๆ'];
+const VASOS = ['Norepinephrine (Levophed)', 'Dopamine', 'Adrenaline', 'Dobutamine', 'อื่นๆ'];
+const DISCHARGE = [
+  ['complete', 'Complete recovery'], ['improve', 'Improve'], ['refer', 'Refer'],
+  ['dar_improve', 'ปฏิเสธการรักษา (ดีขึ้น)'], ['dar_dying', 'ปฏิเสธการรักษา กลับไปเสียชีวิตที่บ้าน'], ['dead', 'เสียชีวิต']
+];
+const DIS = Object.fromEntries(DISCHARGE);
+const TH_MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const FY_MONTHS = [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8]; // ต.ค. → ก.ย.
+
+/* ===== กฎตัวชี้วัดและการตรวจข้อมูล (ชุดเดียวกันทั้งหน้าเว็บและฝั่ง Sheet) ===== */
+const RULES = { ATB_MIN: 60, ICU_MIN: 180, FLUID_ML_PER_KG: 30, FLUID_WINDOW_MIN: 60, EARLIEST_MIN: -24 * 60, LATEST_MIN: 7 * 24 * 60 };
+const EVENT_LABELS = { hc1_dt: 'เวลาเจาะ H/C ขวดที่ 1', hc2_dt: 'เวลาเจาะ H/C ขวดที่ 2', atb1_dt: 'เวลาให้ ATB ชนิดที่ 1', atb2_dt: 'เวลาให้ ATB ชนิดที่ 2', fluid_start_dt: 'เวลาเริ่ม IV fluid', vaso1_dt: 'เวลาเริ่มยากระตุ้นความดันตัวที่ 1', vaso2_dt: 'เวลาเริ่มยากระตุ้นความดันตัวที่ 2', icu_dt: 'เวลาเข้ารับการดูแลภาวะวิกฤต' };
+const NUM_RANGES = [['age', 'อายุ', 0, 120], ['weight', 'น้ำหนัก', 1, 300], ['fluid_1h_ml', 'ปริมาณ IV fluid', 0, 10000], ['mews', 'MEWS', 0, 20], ['lactate_value', 'ผล lactate', 0, 30]];
+
+function hasTime(v) { return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v); }
+function hasDate(v) { return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v); }
+function toDate(v) {
+  const m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)) : null;
+}
+function mins(a, b) { if (!hasTime(a) || !hasTime(b)) return null; return (toDate(b) - toDate(a)) / 60000; }
+function dayDiff(a, b) { if (!hasDate(a) || !hasDate(b)) return null; return Math.round((toDate(b.slice(0, 10)) - toDate(a.slice(0, 10))) / 864e5); }
+function numOf(v) { if (v === '' || v == null) return null; const n = Number(v); return isFinite(n) ? n : NaN; }
+
+/** ประเมินตัวชี้วัดของเคสหนึ่งเคส: pass / fail / missing (ข้อมูลไม่ครบ) / na (ไม่นับ) */
+function evaluate(c) {
+  const r = {};
+  r.atbMin = mins(c.dx_dt, c.atb1_dt);
+  if (c.atb_refused === '1') r.atb = 'na';
+  else if (r.atbMin == null) r.atb = 'missing';
+  else r.atb = r.atbMin <= RULES.ATB_MIN ? 'pass' : 'fail';
+
+  if (c.atb_refused === '1') r.hc = 'na';
+  else if (c.hc_not_done === '1') r.hc = 'fail';
+  else { const d = mins(c.hc1_dt, c.atb1_dt); r.hc = d == null ? 'missing' : (d >= 0 ? 'pass' : 'fail'); }
+
+  const w = numOf(c.weight), ml = numOf(c.fluid_1h_ml);
+  const wOk = w != null && !isNaN(w) && w >= 1 && w <= 300;
+  r.fluidTarget = wOk ? Math.round(RULES.FLUID_ML_PER_KG * w) : null;
+  r.fluidStartMin = mins(c.dx_dt, c.fluid_start_dt);
+  if (c.fluid_contra === '1') r.fluid = 'na';
+  else if (!wOk || ml == null || isNaN(ml) || ml < 0 || r.fluidStartMin == null) r.fluid = 'missing';
+  else r.fluid = (ml >= RULES.FLUID_ML_PER_KG * w && r.fluidStartMin <= RULES.FLUID_WINDOW_MIN) ? 'pass' : 'fail';
+
+  if (c.icu_needed !== '1') r.icu = 'na';
+  else { r.icuMin = mins(c.dx_dt, c.icu_dt); r.icu = r.icuMin == null ? 'missing' : (r.icuMin <= RULES.ICU_MIN ? 'pass' : 'fail'); }
+
+  r.lactate = c.lactate_sent === '1';
+  // 1-hour bundle = ATB ≤ 60 นาที + H/C ก่อน ATB + ส่ง lactate + fluid 30 ml/kg (ยกเว้นมีข้อห้าม)
+  if (r.atb === 'na') r.bundle = 'na';
+  else {
+    const parts = [r.atb, r.hc, r.fluid === 'na' ? 'pass' : r.fluid, r.lactate ? 'pass' : 'fail'];
+    r.bundle = parts.indexOf('fail') >= 0 ? 'fail' : parts.indexOf('missing') >= 0 ? 'missing' : 'pass';
+  }
+  r.closed = !!c.discharge_status;
+  r.dead = c.discharge_status === 'dead' || c.discharge_status === 'dar_dying';
+  const los = dayDiff(c.admit_dt || c.dx_dt, c.discharge_dt);
+  r.los = los == null ? null : Math.max(0, los);
+  return r;
+}
+
+/** ตรวจข้อมูลก่อนบันทึก: errors = ต้องแก้ก่อนบันทึก, warnings = ให้ตรวจแต่บันทึกได้ */
+function validateCase(c) {
+  const errors = [], warnings = [];
+  const hn = String(c.hn || '').trim();
+  if (!hn) errors.push('กรุณากรอก HN');
+  else if (!/^[0-9A-Za-z-]{3,15}$/.test(hn)) errors.push('HN ต้องเป็นตัวเลขหรือตัวอักษร 3–15 ตัว ไม่มีช่องว่าง');
+  if (!String(c.recorder || '').trim()) errors.push('กรุณากรอกชื่อผู้บันทึก');
+  if (!hasTime(c.dx_dt)) errors.push('กรุณากรอกทั้งวันและเวลาที่วินิจฉัย Sepsis');
+
+  NUM_RANGES.forEach(function (x) {
+    const v = numOf(c[x[0]]);
+    if (v != null && (isNaN(v) || v < x[2] || v > x[3])) errors.push(x[1] + ' ต้องอยู่ระหว่าง ' + x[2] + '–' + x[3]);
+  });
+
+  Object.keys(EVENT_LABELS).forEach(function (k) {
+    if (hasDate(c[k]) && !hasTime(c[k])) warnings.push(EVENT_LABELS[k] + ' มีแต่วันที่ ยังไม่มีเวลา ระบบจะนับเป็นข้อมูลไม่ครบ');
+    const m = mins(c.dx_dt, c[k]);
+    if (m != null && (m < RULES.EARLIEST_MIN || m > RULES.LATEST_MIN)) errors.push(EVENT_LABELS[k] + ' ห่างจากเวลาวินิจฉัยเกินช่วงที่รับได้ (ก่อน 24 ชม. ถึงหลัง 7 วัน) ตรวจวันที่อีกครั้ง');
+  });
+  if (hasTime(c.admit_dt) && mins(c.dx_dt, c.admit_dt) > 24 * 60) errors.push('วันเวลา admit อยู่หลังเวลาวินิจฉัยเกิน 24 ชม.');
+  if (hasDate(c.discharge_dt) && dayDiff(c.dx_dt, c.discharge_dt) < 0) errors.push('วันจำหน่ายอยู่ก่อนวันวินิจฉัย');
+  if (hasDate(c.discharge_dt) && hasDate(c.admit_dt) && dayDiff(c.admit_dt, c.discharge_dt) < 0) errors.push('วันจำหน่ายอยู่ก่อนวัน admit');
+
+  if (c.hc_not_done === '1' && (c.hc1_dt || c.hc2_dt)) errors.push('ติ๊ก "ไม่ได้เจาะ H/C" แต่มีเวลาเจาะ H/C เลือกอย่างใดอย่างหนึ่ง');
+  if (c.hc_not_done === '1' && !String(c.hc_not_done_reason || '').trim()) errors.push('กรุณาระบุเหตุผลที่ไม่ได้เจาะ H/C');
+  if (c.hc2_dt && !c.hc1_dt) errors.push('มีเวลาเจาะ H/C ขวดที่ 2 แต่ไม่มีขวดที่ 1');
+  if (c.atb_refused === '1') {
+    if (c.atb1_dt) errors.push('ติ๊กข้อยกเว้น ATB แต่มีเวลาให้ ATB เลือกอย่างใดอย่างหนึ่ง');
+    if (!c.atb_exception_type) errors.push('กรุณาเลือกประเภทข้อยกเว้น ATB (ปฏิเสธ หรือไม่มีแผนให้)');
+    if (!String(c.atb_exception_reason || '').trim()) errors.push('กรุณาระบุรายละเอียดข้อยกเว้น ATB');
+  }
+  if (c.fluid_contra === '1' && !String(c.fluid_contra_reason || '').trim()) errors.push('กรุณาระบุข้อห้ามในการให้ IV fluid 30 ml/kg');
+  if (c.icu_dt && c.icu_needed !== '1') errors.push('มีเวลาเข้ารับการดูแลภาวะวิกฤต แต่ไม่ได้ติ๊กว่าต้องได้รับการดูแลภาวะวิกฤต');
+  if (c.discharge_status && !hasDate(c.discharge_dt)) errors.push('เลือกสถานะจำหน่ายแล้ว กรุณากรอกวันจำหน่าย');
+  if (hasDate(c.discharge_dt) && !c.discharge_status) errors.push('กรอกวันจำหน่ายแล้ว กรุณาเลือกสถานะจำหน่าย');
+
+  const atbMin = mins(c.dx_dt, c.atb1_dt);
+  if (atbMin != null && atbMin < -RULES.ATB_MIN) warnings.push('ให้ ATB ก่อนเวลาวินิจฉัย ' + Math.round(-atbMin) + ' นาที ระบบนับว่าผ่าน แต่ควรทบทวน');
+  if (mins(c.hc1_dt, c.atb1_dt) === 0) warnings.push('เวลาเจาะ H/C กับเวลาให้ ATB เป็นเวลาเดียวกัน ระบบนับว่า H/C ก่อน ATB');
+  if (c.atb1_dt && !c.atb1_name) warnings.push('มีเวลาให้ ATB แต่ยังไม่ระบุชื่อยา');
+  if (c.discharge_status === 'refer' && !String(c.refer_to || '').trim()) warnings.push('ยังไม่ระบุ รพ. ที่ refer');
+  return { errors: errors, warnings: warnings };
+}
+/* ===== จบกฎตัวชี้วัด ===== */
+
+function fyOf(iso) { const d = toDate(iso); if (!d) return null; if (isNaN(d)) return null; return d.getMonth() >= 9 ? d.getFullYear() + 544 : d.getFullYear() + 543; }
+function qOf(iso) { const m = toDate(iso).getMonth(); return m >= 9 ? 1 : m <= 2 ? 2 : m <= 5 ? 3 : 4; }
+function currentFY() { const d = new Date(); return d.getMonth() >= 9 ? d.getFullYear() + 544 : d.getFullYear() + 543; }
+
+/* ============ Formatting ============ */
+const pad = n => String(n).padStart(2, '0');
+function fmtDate(iso) { const d = toDate(iso); if (!d) return '–'; return `${d.getDate()} ${TH_MON[d.getMonth()]} ${String(d.getFullYear() + 543).slice(2)}`; }
+function fmtDT(iso) { const d = toDate(iso); if (!d) return '–'; if (!hasTime(iso)) return `${fmtDate(iso)} (ไม่มีเวลา)`; return `${fmtDate(iso)} ${pad(d.getHours())}:${pad(d.getMinutes())} น.`; }
+function pct(n, d) { return d ? (n / d * 100) : null; }
+function fmtPct(v) { return v == null ? '–' : (Math.round(v * 10) / 10).toLocaleString('th-TH', { maximumFractionDigits: 1 }) + '%'; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+function median(a) { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+const PILL_TXT = { pass: 'ผ่าน', fail: 'ไม่ผ่าน', missing: 'ไม่ลงเวลา', na: 'ไม่นับ' };
+function pill(label, st) { return `<span class="pill ${st}">${esc(label)}: ${PILL_TXT[st]}</span>`; }
+
+/* ============ State ============ */
+const S = { role: null, code: null, cases: [], tab: 'dash', fy: null, period: 'all', ward: 'all', sev: 'all', listFilter: 'all', q: '', editing: null };
+function ss(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2600); }
+
+const TAB_ICON = {
+  dash: '<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/>',
+  form: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/>',
+  list: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/>',
+  defs: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>'
+};
+const TAB_SHORT = { dash: 'แดชบอร์ด', form: 'บันทึกเคส', list: 'ทะเบียน', defs: 'นิยาม' };
+const TABS_EDITOR = [['dash', 'แดชบอร์ด & ตัวชี้วัด'], ['form', 'บันทึกข้อมูลเคสใหม่'], ['list', 'ทะเบียนผู้ป่วย'], ['defs', 'นิยามตัวชี้วัด']];
+const TABS_VIEWER = [['dash', 'แดชบอร์ด & ตัวชี้วัด'], ['defs', 'นิยามตัวชี้วัด']];
+
+function renderShell() {
+  const tabs = S.role === 'editor' ? TABS_EDITOR : S.role === 'viewer' ? TABS_VIEWER : [];
+  document.getElementById('tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab" role="tab" aria-selected="${S.tab === k}" data-tab="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TAB_ICON[k]}</svg><span class="full">${l}</span><span class="short">${TAB_SHORT[k]}</span></button>`).join('');
+  document.getElementById('who').innerHTML = S.role && S.code ? `${S.role === 'editor' ? 'บันทึก/แก้ไข' : 'ดูสรุป'} · <button id="logout">ออกจากระบบ</button>` : '';
+}
+document.getElementById('tabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-tab]'); if (!b) return;
+  if (b.dataset.tab === 'form') S.editing = null;
+  go(b.dataset.tab);
+});
+document.getElementById('who').addEventListener('click', e => {
+  if (e.target.id === 'logout') { ss('sepsis_code', null); S.role = null; S.code = null; S.cases = []; renderShell(); renderLogin(); }
+});
+function go(tab) { S.animNext = tab === 'dash'; S.tab = tab; renderShell(); syncHeader(); render(); window.scrollTo(0, 0); }
+
+function render() {
+  const app = document.getElementById('app');
+  const demo = IS_GAS ? '' : '<div class="demo-note">โหมดตัวอย่าง: ข้อมูลในหน้านี้เป็นเคสสมมติ ไม่ใช่ข้อมูลผู้ป่วยจริง และจะไม่ถูกบันทึกไว้</div>';
+  if (S.tab === 'dash') app.innerHTML = demo + viewDash();
+  else if (S.tab === 'form') { app.innerHTML = demo + viewForm(); bindForm(); }
+  else if (S.tab === 'list') app.innerHTML = demo + viewList();
+  else if (S.tab === 'defs') app.innerHTML = viewDefs();
+  if (S.tab === 'dash') { bindDash(); if (S.animNext) playIntro(); }
+  S.animNext = false;
+}
+
+/* ============ Login ============ */
+function renderLogin(err) {
+  document.getElementById('app').innerHTML = `
+  <div class="login"><form class="panel" id="loginForm">
+    <h2>เข้าสู่ระบบ</h2>
+    <p class="sub">ใช้รหัสของกลุ่ม PCT อายุรกรรม รหัสสำหรับบันทึกข้อมูลกับรหัสสำหรับดูสรุปเป็นคนละรหัสกัน</p>
+    <div class="f"><label for="code">รหัสผ่าน</label><input id="code" type="password" autocomplete="current-password" required></div>
+    ${err ? `<div class="msg err">${esc(err)}</div>` : ''}
+    ${IS_GAS ? '' : '<div class="hint" style="font-size:12.5px;color:var(--muted)">โหมดตัวอย่าง: ใช้รหัส <b>edit</b> หรือ <b>view</b></div>'}
+    <button class="btn primary" type="submit">เข้าสู่ระบบ</button>
+  </form></div>`;
+  document.getElementById('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const code = document.getElementById('code').value.trim();
+    try { await doLogin(code); } catch (x) { renderLogin(x.message); }
+  });
+  document.getElementById('code').focus();
+}
+async function doLogin(code) {
+  const r = await call('login', code);
+  S.role = r.role; S.code = code; if (code) ss('sepsis_code', code);
+  document.getElementById('app').innerHTML = '<div class="loading">กำลังโหลดข้อมูล…</div>';
+  await reload();
+  S.tab = 'dash'; S.animNext = true; renderShell(); syncHeader(); render();
+}
+async function reload() {
+  S.cases = await call('listCases', S.code);
+  const fys = fyList();
+  if (!S.fy || !fys.includes(S.fy)) { const withData = fys.filter(y => S.cases.some(c => fyOf(c.dx_dt) === y)); S.fy = withData[0] || fys[0]; }
+}
+function fyList() {
+  const set = new Set(S.cases.map(c => fyOf(c.dx_dt)).filter(Boolean));
+  set.add(currentFY());
+  return [...set].sort((a, b) => b - a);
+}
+
+/* ============ Aggregation ============ */
+const TARGET = 80; // เป้าหมายร้อยละของตัวชี้วัดกระบวนการ (แก้ได้)
+function agg(list) {
+  const ev = list.map(c => ({ c, r: evaluate(c) }));
+  const k = key => {
+    const pool = ev.filter(x => x.r[key] !== 'na');
+    return { n: pool.filter(x => x.r[key] === 'pass').length, d: pool.length, miss: pool.filter(x => x.r[key] === 'missing').length, fail: pool.filter(x => x.r[key] === 'fail').length };
+  };
+  const treat = ev.filter(x => x.r.atb !== 'na');
+  const flagN = f => ({ n: treat.filter(f).length, d: treat.length });
+  const closed = ev.filter(x => x.r.closed);
+  const dead = closed.filter(x => x.r.dead).length;
+  const ca = closed.filter(x => x.c.onset === 'community');
+  const atbTimes = treat.map(x => x.r.atbMin).filter(v => v != null);
+  return {
+    total: list.length, closed: closed.length, open: list.length - closed.length, dead,
+    caDead: ca.filter(x => x.r.dead).length, caClosed: ca.length,
+    shock: list.filter(c => c.severity === 'shock').length,
+    atb: k('atb'), hc: k('hc'), fluid: k('fluid'), icu: k('icu'),
+    hc2: flagN(x => !!x.c.hc1_dt && !!x.c.hc2_dt),
+    lactate: flagN(x => x.r.lactate),
+    culture: flagN(x => x.c.culture_other === '1'),
+    map: flagN(x => x.c.map65 === '1'),
+    bundle: k('bundle'),
+    medAtb: median(atbTimes)
+  };
+}
+function inPeriod(c, fy, period) {
+  if (fyOf(c.dx_dt) !== fy) return false;
+  if (period === 'all') return true;
+  if (period.startsWith('q')) return qOf(c.dx_dt) === +period.slice(1);
+  return toDate(c.dx_dt).getMonth() === +period.slice(1);
+}
+function passFilters(c) {
+  if (S.ward !== 'all' && c.ward !== S.ward) return false;
+  if (S.sev !== 'all' && c.severity !== S.sev) return false;
+  return true;
+}
+const scoped = period => S.cases.filter(c => passFilters(c) && inPeriod(c, S.fy, period));
+
+/* ============ Dashboard ============ */
+const ICON = {
+  people: '<path d="M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1"/><circle cx="9" cy="7" r="3.5"/><path d="M22 19v-1a4 4 0 0 0-3-3.9M16 3.1a3.5 3.5 0 0 1 0 6.8"/>',
+  alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  check: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  vial: '<path d="M9 2h6M10 2v13a2 2 0 0 0 4 0V2"/><path d="M10 10h4"/>',
+  drop: '<path d="M12 2.7 6.3 8.4a8 8 0 1 0 11.4 0z"/>',
+  bed: '<path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/>'
+};
+const ic = k => `<svg class="kic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
+
+function viewDash() {
+  const fys = fyList();
+  const list = scoped(S.period);
+  const A = agg(list);
+  const perLabel = S.period === 'all' ? `ทั้งปีงบประมาณ ${S.fy}` : S.period.startsWith('q') ? `ไตรมาสที่ ${S.period.slice(1)} ปีงบ ${S.fy}` : `${TH_MON[+S.period.slice(1)]} ปีงบ ${S.fy}`;
+  const filt = [S.ward !== 'all' ? S.ward : '', S.sev === 'shock' ? 'เฉพาะ Septic shock' : S.sev === 'sepsis' ? 'เฉพาะ Sepsis (ไม่ shock)' : ''].filter(Boolean).join(' · ');
+  const state = o => { const v = pct(o.n, o.d); return v == null ? '' : v >= TARGET ? 'ok' : 'low'; };
+  const tile = (icon, lab, o, sub) => `<div class="kpi ${state(o)}"><div class="khead"><span class="lab">${lab}</span>${ic(icon)}</div>
+    <div class="val">${fmtPct(pct(o.n, o.d))}</div>
+    <div class="fr num">${o.n} / ${o.d} ราย${o.miss ? ` · <span class="flag">ไม่ลงเวลา ${o.miss}</span>` : ''}</div>${sub ? `<div class="fr">${sub}</div>` : ''}</div>`;
+  const monthOpts = FY_MONTHS.map(m => `<option value="m${m}" ${S.period === 'm' + m ? 'selected' : ''}>${TH_MON[m]}</option>`).join('');
+  const wardSet = [...new Set([...WARDS, ...S.cases.map(c => c.ward).filter(Boolean)])];
+
+  return `<div class="stack">
+  <section class="panel filters">
+    <div class="f"><label for="fy">ปีงบประมาณ</label><select id="fy">${fys.map(y => `<option value="${y}" ${y === S.fy ? 'selected' : ''}>ปีงบประมาณ ${y}</option>`).join('')}</select></div>
+    <div class="f"><span class="lb">ช่วงเวลา</span><div class="row" style="gap:6px"><div class="seg" id="per">${['all', 'q1', 'q2', 'q3', 'q4'].map(p => `<button aria-pressed="${S.period === p}" data-p="${p}">${p === 'all' ? 'ทั้งปี' : 'Q' + p.slice(1)}</button>`).join('')}</div>
+      <select id="mon" aria-label="เลือกเดือน" style="width:auto;min-height:36px;padding:4px 8px"><option value="">เดือน…</option>${monthOpts}</select></div></div>
+    <div class="f"><label for="wardF">หอผู้ป่วย</label><select id="wardF"><option value="all">ทุกหอผู้ป่วย</option>${wardSet.map(w => `<option ${S.ward === w ? 'selected' : ''}>${esc(w)}</option>`).join('')}</select></div>
+    <div class="f"><label for="sevF">ความรุนแรง</label><select id="sevF"><option value="all" ${S.sev === 'all' ? 'selected' : ''}>ทั้งหมด</option><option value="sepsis" ${S.sev === 'sepsis' ? 'selected' : ''}>Sepsis (ไม่ shock)</option><option value="shock" ${S.sev === 'shock' ? 'selected' : ''}>Septic shock</option></select></div>
+  </section>
+  <div class="row" style="margin-top:-6px;justify-content:space-between"><div class="sub">${perLabel}${filt ? ' · ' + filt : ''} · ${A.total} ราย${A.open ? ` · รอสรุป outcome ${A.open} ราย` : ''}</div><button class="btn replay" id="replay" type="button"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>เล่นแอนิเมชันอีกครั้ง</button></div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="khead"><span class="lab">ผู้ป่วย Sepsis ทั้งหมด</span>${ic('people')}</div><div class="val">${A.total}<small> ราย</small></div><div class="fr">จำหน่ายแล้ว ${A.closed} ราย</div></div>
+    <div class="kpi shock"><div class="khead"><span class="lab">Septic shock</span>${ic('alert')}</div><div class="val">${A.shock}<small> ราย</small></div><div class="fr">${fmtPct(pct(A.shock, A.total))} ของผู้ป่วยทั้งหมด</div></div>
+    <div class="kpi"><div class="khead"><span class="lab">อัตราตาย</span>${ic('heart')}</div><div class="val">${fmtPct(pct(A.dead, A.closed))}</div><div class="fr num">${A.dead} / ${A.closed} รายที่จำหน่ายแล้ว</div>${A.caClosed ? `<div class="fr">community-acquired ${fmtPct(pct(A.caDead, A.caClosed))}</div>` : ''}</div>
+    ${tile('check', '1-hr bundle ครบ 4 ข้อ', A.bundle, `เป้าหมาย ≥ ${TARGET}%`)}
+    ${tile('clock', 'ATB ภายใน 1 ชม.', A.atb, A.medAtb != null ? `median ${Math.round(A.medAtb)} นาที` : '')}
+    ${tile('vial', 'H/C ก่อนให้ ATB', A.hc)}
+    ${tile('drop', 'IV fluid 30 ml/kg ใน 1 ชม.', A.fluid)}
+    ${tile('bed', 'ภาวะวิกฤตภายใน 3 ชม.', A.icu)}
+  </div>
+
+  <div class="duo">
+    ${viewMonthly()}
+    ${viewBundle(A)}
+  </div>
+
+  <div class="trio">
+    ${barPanel('แหล่งที่สงสัยการติดเชื้อ', 'หนึ่งเคสเลือกได้หลายแหล่ง', countBy(list, c => (c.source || '').split(',').filter(Boolean).map(s => SRC[s] || s)), list.length)}
+    ${barPanel('แยกตามหอผู้ป่วย', 'จำนวนเคสที่พบในแต่ละหอ', countBy(list, c => [c.ward || 'ไม่ระบุ']), list.length)}
+    ${barPanel('ผลการรักษา (Discharge status)', 'ร้อยละของผู้ป่วยทั้งหมดในช่วงที่เลือก', countBy(list, c => [c.discharge_status ? (DIS[c.discharge_status] || c.discharge_status) : 'ยังไม่จำหน่าย'], DISCHARGE.map(d => d[1]).concat('ยังไม่จำหน่าย')), list.length)}
+  </div>
+
+  ${viewReport()}
+  ${viewTrend()}
+  ${S.role === 'editor' ? viewReview(list) : ''}
+  </div>`;
+}
+
+function playIntro() {
+  const app = document.getElementById('app');
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  app.classList.remove('anim'); void app.offsetWidth;
+  app.querySelectorAll('.kpi, .panel').forEach((el, i) => el.style.setProperty('--d', i));
+  if (!reduce) app.classList.add('anim');
+  clearTimeout(playIntro._t); playIntro._t = setTimeout(() => app.classList.remove('anim'), 4000);
+  if (reduce) return;
+  app.querySelectorAll('.kpi .val').forEach((el, i) => {
+    const node = [...el.childNodes].find(n => n.nodeType === 3 && /\d/.test(n.nodeValue));
+    if (!node) return;
+    const m = node.nodeValue.match(/^(\D*)([\d,]*\.?\d+)(.*)$/); if (!m) return;
+    const target = parseFloat(m[2].replace(/,/g, '')), dec = (m[2].split('.')[1] || '').length;
+    const t0 = performance.now() + 300 + i * 60, dur = 900;
+    const tick = now => {
+      const p = Math.min(1, Math.max(0, (now - t0) / dur)), e = 1 - Math.pow(1 - p, 3);
+      node.nodeValue = m[1] + (target * e).toLocaleString('th-TH', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + m[3];
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+function countBy(list, keysOf, order) {
+  const m = new Map();
+  list.forEach(c => keysOf(c).forEach(k => m.set(k, (m.get(k) || 0) + 1)));
+  let rows = [...m.entries()];
+  if (order) rows.sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+  else rows.sort((a, b) => b[1] - a[1]);
+  return rows;
+}
+function barPanel(title, sub, rows, total) {
+  const max = rows.length ? Math.max(...rows.map(r => r[1])) : 1;
+  return `<section class="panel"><div class="phead"><div><h2>${title}</h2><p class="sub">${sub}</p></div></div>
+  ${rows.length ? `<div class="bars">${rows.map(([k, n], i) => `<div class="bar-row"><span>${esc(k)}</span><div class="bar-track"><div class="bar-fill" style="--i:${i};width:${n / max * 100}%"></div></div><span class="n">${n} (${fmtPct(pct(n, total))})</span></div>`).join('')}</div>` : '<div class="empty">ยังไม่มีข้อมูล</div>'}
+  </section>`;
+}
+
+function viewMonthly() {
+  const months = FY_MONTHS.map(m => {
+    const l = S.cases.filter(c => passFilters(c) && inPeriod(c, S.fy, 'm' + m));
+    const a = agg(l);
+    return { m, total: a.total, shock: a.shock, dead: a.dead, closed: a.closed };
+  });
+  const W = 600, H = 210, L = 34, R = 10, T = 12, B = 26;
+  const max = Math.max(4, ...months.map(o => o.total));
+  const step = max <= 8 ? 2 : max <= 20 ? 5 : 10;
+  const top = Math.ceil(max / step) * step;
+  const bw = (W - L - R) / 12;
+  const y = v => T + (top - v) * (H - T - B) / top;
+  let grid = '';
+  for (let v = 0; v <= top; v += step) grid += `<line class="gl" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L - 6}" y="${y(v) + 3.5}" text-anchor="end">${v}</text>`;
+  const bars = months.map((o, i) => {
+    const x = L + i * bw + bw * 0.18, w = bw * 0.64;
+    const sep = o.total - o.shock;
+    const tip = `${TH_MON[o.m]}: ${o.total} ราย (shock ${o.shock})`;
+    let s = '';
+    if (sep > 0) s += `<rect class="b1" style="--i:${i}" x="${x}" y="${y(sep)}" width="${w}" height="${Math.max(0, y(0) - y(sep))}" rx="3"/>`;
+    if (o.shock > 0) s += `<rect class="b2" style="--i:${i}" x="${x}" y="${y(o.total)}" width="${w}" height="${Math.max(0, y(sep) - y(o.total) - 2)}" rx="3"/>`;
+    s += `<text class="ax" x="${x + w / 2}" y="${H - 8}" text-anchor="middle">${TH_MON[o.m]}</text>`;
+    s += `<rect class="hit" x="${L + i * bw}" y="${T}" width="${bw}" height="${H - T - B}" data-tip="${tip}"/>`;
+    return s;
+  }).join('');
+  // mortality per month (small separate chart, same x positions)
+  const mh = 90, mT = 10, mB = 20;
+  const my = v => mT + (100 - v) * (mh - mT - mB) / 100;
+  const mpts = months.map((o, i) => o.closed ? { i, v: o.dead / o.closed * 100, o } : null);
+  const mValid = mpts.filter(Boolean);
+  const mPath = mValid.map((p, j) => `${j ? 'L' : 'M'}${(L + p.i * bw + bw / 2).toFixed(1)},${my(p.v).toFixed(1)}`).join('');
+  const mDots = mValid.map(p => `<circle class="pt2" cx="${L + p.i * bw + bw / 2}" cy="${my(p.v)}" r="3.5"/><circle class="hit" cx="${L + p.i * bw + bw / 2}" cy="${my(p.v)}" r="11" data-tip="${TH_MON[p.o.m]}: ตาย ${p.o.dead}/${p.o.closed} (${fmtPct(p.v)})"/>`).join('');
+  const mGrid = [0, 50, 100].map(v => `<line class="gl" x1="${L}" x2="${W - R}" y1="${my(v)}" y2="${my(v)}"/><text class="ax" x="${L - 6}" y="${my(v) + 3.5}" text-anchor="end">${v}%</text>`).join('');
+  return `<section class="panel chart"><div class="phead"><div><h2>แนวโน้มผู้ป่วยรายเดือน</h2><p class="sub">ปีงบประมาณ ${S.fy} · ชี้ที่แท่งเพื่อดูจำนวน</p></div>
+    <div class="legend"><span><i class="sw s1"></i>Sepsis</span><span><i class="sw s2"></i>Septic shock</span></div></div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="จำนวนผู้ป่วยรายเดือน">${grid}${bars}</svg>
+    <h3 style="margin-top:10px">อัตราตายรายเดือน <span class="sub" style="font-weight:400">(ในผู้ป่วยที่จำหน่ายแล้ว)</span></h3>
+    <svg viewBox="0 0 ${W} ${mh}" role="img" aria-label="อัตราตายรายเดือน">${mGrid}${mPath ? `<path class="ln2" pathLength="1" d="${mPath}"/>` : ''}${mDots}</svg>
+    <div class="tip" hidden></div></section>`;
+}
+
+function viewBundle(A) {
+  const row = ([lab, o, key], i) => {
+    const v = pct(o.n, o.d);
+    return `<div class="bu-row${key ? ' key' : ''}"><span class="bu-lab">${lab}</span>
+      <div class="bu-track" data-tip="${lab}: ${o.n}/${o.d} ราย${o.miss ? ` · ข้อมูลไม่ครบ ${o.miss}` : ''}"><div class="bu-fill ${v != null && v < TARGET ? 'low' : ''}" style="--i:${i};width:${v || 0}%"></div><i class="bu-target" style="left:${TARGET}%"></i></div>
+      <span class="n">${fmtPct(v)}</span></div>`;
+  };
+  const core = [['ให้ IV ATB ภายใน 1 ชม.', A.atb], ['เจาะ H/C ก่อนให้ ATB', A.hc], ['ส่งตรวจ serum lactate', A.lactate], ['IV fluid 30 ml/kg ใน 1 ชม.', A.fluid], ['ผ่านครบทั้ง 4 ข้อ', A.bundle, true]];
+  const extra = [['เจาะ H/C ครบ 2 ขวด', A.hc2], ['ส่ง culture ตาม source', A.culture], ['Keep MAP ≥ 65 mmHg', A.map]];
+  const axis = `<div class="bu-axis"><span></span><div class="bu-ticks">${[0, 20, 40, 60, 80, 100].map(t => `<b style="left:${t}%">${t}%</b>`).join('')}</div><span></span></div>`;
+  return `<section class="panel chart"><div class="phead"><div><h2>1-hour bundle</h2><p class="sub">ร้อยละในช่วงที่เลือก เส้นประคือเป้าหมาย ${TARGET}%</p></div></div>
+    <div class="bundle"><div class="bu-group">องค์ประกอบ bundle (นับในสูตร "ครบ 4 ข้อ")</div>${core.map(row).join('')}
+    <div class="bu-group">การดูแลอื่นตาม checklist (ไม่นับในสูตร bundle)</div>${extra.map((r, i) => row(r, i + 5)).join('')}${axis}</div>
+    <div class="tip" hidden></div></section>`;
+}
+
+function viewReport() {
+  const Q = [1, 2, 3, 4].map(q => agg(scoped('q' + q)));
+  const Y = agg(scoped('all'));
+  const all = [...Q, Y];
+  const cnt = (a, o) => a.total ? `${o.n} (${fmtPct(pct(o.n, o.d))})` : '–';
+  const rows = [
+    ['1', 'จำนวนผู้ป่วยทั้งหมด', a => a.total ? a.total : '–'],
+    ['2', 'จำนวนผู้ป่วยตายทั้งหมด', a => a.total ? a.dead : '–'],
+    ['3', 'อัตราตาย', a => a.closed ? fmtPct(pct(a.dead, a.closed)) : '–'],
+    ['4', 'อัตราการได้รับ Antibiotic ภายใน 1 ชม. (นับจากเวลาที่ได้รับการวินิจฉัย)', a => cnt(a, a.atb)],
+    ['5', 'อัตราการเจาะ H/C ก่อนให้ Antibiotic', a => cnt(a, a.hc)],
+    ['6', 'อัตราการได้รับ IV 30 ml/kg ใน 1 ชม. แรก (ในกรณีไม่มีข้อห้าม)', a => cnt(a, a.fluid)],
+    ['7', 'อัตราที่ผู้ป่วยได้รับการดูแลแบบภาวะวิกฤต (ระดับ 4-5) ภายใน 3 ชม.', a => a.icu.d ? `${a.icu.n} / ${a.icu.d}` : '–']
+  ];
+  const notes = Q.map((a, i) => {
+    if (!a.total) return '';
+    const parts = [];
+    if (a.atb.miss || a.atb.fail) parts.push(`ATB: ไม่ลงเวลา ${a.atb.miss} คน เกินเวลา ${a.atb.fail} คน`);
+    if (a.hc.miss || a.hc.fail) parts.push(`H/C: ไม่ลงเวลา ${a.hc.miss} คน เจาะหลัง ATB/ไม่ได้เจาะ ${a.hc.fail} คน`);
+    return parts.length ? `<li>ไตรมาส ${i + 1}: ${parts.join(' · ')}</li>` : '';
+  }).join('');
+  return `<section class="panel">
+    <div class="phead"><div><h2>แบบบันทึกตัวชี้วัด ปีงบประมาณ ${S.fy}</h2><p class="sub">ข้อมูลตัวชี้วัดผู้ป่วย sepsis หอผู้ป่วยใน คำนวณจากเวลาที่บันทึกโดยอัตโนมัติ</p></div>
+    <button class="btn" id="copyReport">คัดลอกตาราง</button></div>
+    <div class="tbl-wrap"><table class="report" id="reportTbl">
+      <thead><tr><th>ลำดับ</th><th>ตัวชี้วัด</th><th class="n">ไตรมาสที่ 1<br>(ต.ค.-ธ.ค.)</th><th class="n">ไตรมาสที่ 2<br>(ม.ค.-มี.ค.)</th><th class="n">ไตรมาสที่ 3<br>(เม.ย.-มิ.ย.)</th><th class="n">ไตรมาสที่ 4<br>(ก.ค.-ก.ย.)</th><th class="n">รวม</th></tr></thead>
+      <tbody>${rows.map(([no, lab, f]) => `<tr><td>${no}</td><td>${lab}</td>${all.map(a => `<td class="n">${f(a)}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div>
+    ${notes ? `<ul class="notes">${notes}</ul>` : ''}
+  </section>`;
+}
+
+function viewTrend() {
+  const months = FY_MONTHS.map(m => ({ m, a: agg(scoped('m' + m)) }));
+  const series = [['atb', 'ATB ภายใน 1 ชม.'], ['hc', 'H/C ก่อน ATB'], ['fluid', 'IV fluid 30 ml/kg']];
+  return `<section class="panel">
+    <div class="phead"><div><h2>แนวโน้มตัวชี้วัดรายเดือน</h2><p class="sub">ร้อยละรายเดือน ปีงบประมาณ ${S.fy} (ต.ค. – ก.ย.) ชี้ที่จุดเพื่อดูจำนวน</p></div></div>
+    <div class="multiples">${series.map(([k, lab]) => miniLine(k, lab, months)).join('')}</div>
+  </section>`;
+}
+function miniLine(key, label, months) {
+  const W = 300, H = 150, L = 30, R = 8, T = 10, B = 24;
+  const x = i => L + i * (W - L - R) / 11;
+  const y = v => T + (100 - v) * (H - T - B) / 100;
+  const pts = months.map((o, i) => { const s = o.a[key]; return s.d ? { i, v: s.n / s.d * 100, n: s.n, d: s.d, m: o.m } : null; });
+  const segs = []; let cur = [];
+  pts.forEach(p => { if (p) cur.push(p); else if (cur.length) { segs.push(cur); cur = []; } });
+  if (cur.length) segs.push(cur);
+  const grid = [0, 50, 100].map(v => `<line class="gl" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L - 6}" y="${y(v) + 3.5}" text-anchor="end">${v}</text>`).join('');
+  const tgt = `<line class="tg" x1="${L}" x2="${W - R}" y1="${y(TARGET)}" y2="${y(TARGET)}"/>`;
+  const xl = [0, 3, 6, 9, 11].map(i => `<text class="ax" x="${x(i)}" y="${H - 6}" text-anchor="middle">${TH_MON[FY_MONTHS[i]]}</text>`).join('');
+  const paths = segs.map(s => {
+    const d = s.map((p, j) => `${j ? 'L' : 'M'}${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
+    const area = s.length > 1 ? `<path class="ar" d="${d}L${x(s[s.length - 1].i)},${y(0)}L${x(s[0].i)},${y(0)}Z"/>` : '';
+    return area + `<path class="ln" pathLength="1" d="${d}"/>`;
+  }).join('');
+  const valid = pts.filter(Boolean);
+  const last = valid[valid.length - 1];
+  const dots = valid.map(p => `<circle class="pt" cx="${x(p.i)}" cy="${y(p.v)}" r="${p === last ? 4.5 : 3}"/>`).join('');
+  const hits = valid.map(p => `<circle class="hit" cx="${x(p.i)}" cy="${y(p.v)}" r="12" data-tip="${TH_MON[p.m]}: ${fmtPct(p.v)} (${p.n}/${p.d} ราย)"/>`).join('');
+  return `<div class="chart"><h3>${label}</h3>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${label} รายเดือน">${grid}${tgt}${xl}${paths}${dots}${hits}</svg>
+    ${valid.length ? '' : '<div class="sub">ยังไม่มีข้อมูลในปีงบนี้</div>'}
+    <div class="tip" hidden></div></div>`;
+}
+function viewReview(list) {
+  const flagged = list.map(c => ({ c, r: evaluate(c) })).filter(x => ['atb', 'hc', 'fluid', 'icu'].some(k => x.r[k] === 'fail' || x.r[k] === 'missing'))
+    .sort((a, b) => new Date(b.c.dx_dt) - new Date(a.c.dx_dt));
+  const open = S.cases.filter(c => !c.discharge_status).sort((a, b) => new Date(a.dx_dt) - new Date(b.dx_dt));
+  return `<section class="panel"><div class="phead"><div><h2>เคสที่ต้องทบทวน</h2><p class="sub">ไม่ผ่านหรือไม่ลงเวลาอย่างน้อยหนึ่งตัวชี้วัด ในช่วงที่เลือก (${flagged.length} ราย)</p></div></div>
+    ${flagged.length ? `<div class="cases">${flagged.slice(0, 30).map(x => caseCard(x.c, x.r)).join('')}</div>` : '<div class="empty">ไม่มีเคสที่ต้องทบทวน</div>'}
+  </section>
+  <section class="panel"><div class="phead"><div><h2>รอบันทึก outcome</h2><p class="sub">เคสที่ยังไม่ได้ลงสถานะจำหน่าย ทุกปีงบ (${open.length} ราย)</p></div></div>
+    ${open.length ? `<div class="cases">${open.slice(0, 30).map(c => caseCard(c, evaluate(c))).join('')}</div>` : '<div class="empty">บันทึก outcome ครบทุกเคสแล้ว</div>'}
+  </section>`;
+}
+function caseCard(c, r) {
+  const status = c.discharge_status ? `<span class="pill ${r.dead ? 'fail' : 'na'}">${esc(DIS[c.discharge_status] || c.discharge_status)}</span>` : '<span class="pill open">รอ outcome</span>';
+  return `<button class="case" data-id="${esc(c.id)}">
+    <div><div class="t">HN <span class="num">${esc(c.hn || '')}</span>${c.patient_name ? ' · ' + esc(c.patient_name) : ''}${c.severity === 'shock' ? ' · Septic shock' : ''}</div>
+    <div class="m">${fmtDT(c.dx_dt)} · ${esc(c.ward || '')}${c.age ? ` · ${c.sex === 'M' ? 'ชาย' : c.sex === 'F' ? 'หญิง' : ''} ${esc(c.age)} ปี` : ''}${c.source ? ' · ' + c.source.split(',').map(s => SRC[s] || s).join(', ') : ''}</div></div>
+    <div>${status}</div>
+    <div class="pills">${pill('ATB 1 ชม.', r.atb)}${pill('H/C ก่อน ATB', r.hc)}${r.fluid !== 'na' ? pill('Fluid 30 ml/kg', r.fluid) : ''}${r.icu !== 'na' ? pill('ICU 3 ชม.', r.icu) : ''}</div>
+  </button>`;
+}
+function bindDash() {
+  const app = document.getElementById('app');
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onchange = () => fn(el.value); };
+  on('fy', v => { S.fy = +v; render(); });
+  on('mon', v => { if (v) { S.period = v; render(); } });
+  on('wardF', v => { S.ward = v; render(); });
+  on('sevF', v => { S.sev = v; render(); });
+  const per = document.getElementById('per');
+  if (per) per.onclick = e => { const b = e.target.closest('[data-p]'); if (b) { S.period = b.dataset.p; render(); } };
+  app.querySelectorAll('.case').forEach(b => b.onclick = () => openCase(b.dataset.id));
+  app.querySelectorAll('.chart').forEach(ch => {
+    const tip = ch.querySelector('.tip'); if (!tip) return;
+    ch.querySelectorAll('[data-tip]').forEach(h => {
+      h.addEventListener('mouseenter', () => {
+        const cb = ch.getBoundingClientRect(); const hb = h.getBoundingClientRect();
+        tip.textContent = h.dataset.tip; tip.hidden = false;
+        tip.style.left = (hb.left - cb.left + hb.width / 2) + 'px';
+        tip.style.top = (hb.top - cb.top + (h.classList.contains('hit') && h.tagName === 'rect' ? hb.height * 0.35 : 0) - 4) + 'px';
+      });
+      h.addEventListener('mouseleave', () => tip.hidden = true);
+    });
+  });
+  const rp = document.getElementById('replay'); if (rp) rp.onclick = () => { window.scrollTo(0, 0); playIntro(); };
+  const cp = document.getElementById('copyReport');
+  if (cp) cp.onclick = async () => {
+    const tbl = document.getElementById('reportTbl');
+    const tsv = [...tbl.rows].map(r => [...r.cells].map(c => c.innerText.replace(/\n/g, ' ')).join('\t')).join('\n');
+    try { await navigator.clipboard.writeText(tsv); toast('คัดลอกแล้ว วางใน Excel หรือ Word ได้เลย'); }
+    catch (e) { const range = document.createRange(); range.selectNode(tbl); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range); toast('เลือกตารางไว้แล้ว กด Ctrl+C / ⌘C เพื่อคัดลอก'); }
+  };
+}
+
+/* ============ Case list ============ */
+function viewList() {
+  const q = S.q.trim().toLowerCase();
+  let list = S.cases.slice().sort((a, b) => (toDate(b.dx_dt) || 0) - (toDate(a.dx_dt) || 0));
+  if (q) list = list.filter(c => [c.hn, c.an, c.patient_name, c.ward, c.atb1_name].some(v => String(v || '').toLowerCase().includes(q)));
+  if (S.listFilter === 'open') list = list.filter(c => !c.discharge_status);
+  if (S.listFilter === 'flag') list = list.filter(c => { const r = evaluate(c); return ['atb', 'hc', 'fluid', 'icu'].some(k => r[k] === 'fail' || r[k] === 'missing'); });
+  const f = (k, l, n) => `<button aria-pressed="${S.listFilter === k}" data-f="${k}">${l}${n != null ? ` <span class="cnt-badge">${n}</span>` : ''}</button>`;
+  const nOpen = S.cases.filter(c => !c.discharge_status).length;
+  const nFlag = S.cases.filter(c => { const r = evaluate(c); return ['atb', 'hc', 'fluid', 'icu'].some(k => r[k] === 'fail' || r[k] === 'missing'); }).length;
+  setTimeout(() => {
+    const qi = document.getElementById('q');
+    qi.oninput = () => { S.q = qi.value; const pos = qi.selectionStart; render(); const n = document.getElementById('q'); n.focus(); n.setSelectionRange(pos, pos); };
+    document.getElementById('lf').onclick = e => { const b = e.target.closest('[data-f]'); if (b) { S.listFilter = b.dataset.f; render(); } };
+    document.querySelectorAll('tr[data-id]').forEach(tr => {
+      tr.onclick = () => openCase(tr.dataset.id);
+      tr.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCase(tr.dataset.id); } };
+    });
+  });
+  const BUNDLE_TXT = { pass: '✓ ผ่าน', fail: 'ไม่ผ่าน', missing: 'ข้อมูลไม่ครบ', na: 'ไม่นับ' };
+  const DIS_SHORT = { complete: 'หายดี', improve: 'ดีขึ้น', refer: 'Refer', dar_improve: 'ปฏิเสธการรักษา', dar_dying: 'กลับไปเสียชีวิตที่บ้าน', dead: 'เสียชีวิต' };
+  const shortDT = v => { const d = toDate(v); if (!d) return '–'; return `${d.getDate()} ${TH_MON[d.getMonth()]} ${String(d.getFullYear() + 543).slice(2)}` + (hasTime(v) ? ` ${pad(d.getHours())}:${pad(d.getMinutes())}` : ''); };
+  const sexTxt = c => c.sex === 'M' ? 'ชาย' : c.sex === 'F' ? 'หญิง' : '';
+  const row = c => {
+    const r = evaluate(c);
+    const sev = c.severity === 'shock' ? '<span class="tag shock">Septic shock</span>' : c.severity === 'sepsis' ? '<span class="tag sepsis">Sepsis</span>' : '<span class="tag">–</span>';
+    const out = !c.discharge_status ? '<span class="tag open">รอ outcome</span>'
+      : r.dead ? `<span class="tag dead">${esc(DIS_SHORT[c.discharge_status] || c.discharge_status)}</span>`
+      : `<span class="tag ok">${esc(DIS_SHORT[c.discharge_status] || c.discharge_status)}</span>`;
+    return `<tr data-id="${esc(c.id)}" tabindex="0">
+      <td class="hn num">${esc(c.hn || '')}</td>
+      <td class="pname">${esc(c.patient_name || '–')}</td>
+      <td>${c.age ? esc(c.age) : '–'}${sexTxt(c) ? ' / ' + sexTxt(c) : ''}</td>
+      <td>${esc(c.ward || '–')}</td>
+      <td class="num nowrap">${shortDT(c.dx_dt)}</td>
+      <td>${sev}</td>
+      <td><span class="tag b-${r.bundle}">${BUNDLE_TXT[r.bundle]}</span></td>
+      <td>${out}</td>
+      <td class="act"><span class="btn-sm">แก้ไข</span></td>
+    </tr>`;
+  };
+  return `<div class="stack">
+    <section class="panel reg-head">
+      <div><h2>ทะเบียนผู้ป่วย Sepsis</h2><p class="sub">ค้นหา ดูรายละเอียด และกลับมาเติม outcome ย้อนหลัง</p></div>
+      <div class="reg-tools">
+        <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="text" placeholder="ค้นหา HN, AN, ชื่อ หรือหอผู้ป่วย" value="${esc(S.q)}" aria-label="ค้นหา"></label>
+        <div class="seg" id="lf">${f('all', 'ทั้งหมด')}${f('open', 'รอ outcome', nOpen)}${f('flag', 'ต้องทบทวน', nFlag)}</div>
+      </div>
+    </section>
+    <section class="panel reg-table">
+      ${list.length ? `<div class="tbl-wrap reg"><table>
+        <thead><tr><th>HN</th><th>ชื่อ - สกุล</th><th>อายุ (ปี) / เพศ</th><th>หอผู้ป่วย</th><th>วันเวลาวินิจฉัย</th><th>ภาวะ</th><th>1-hr bundle</th><th>ผลลัพธ์</th><th class="act">การจัดการ</th></tr></thead>
+        <tbody>${list.slice(0, 300).map(row).join('')}</tbody></table></div>
+        <div class="reg-foot">แสดง ${Math.min(list.length, 300)} จาก ${list.length} ราย · กดที่แถวเพื่อแก้ไขหรือเติม outcome</div>`
+      : '<div class="empty">ไม่พบเคส</div>'}
+    </section>
+  </div>`;
+}
+function openCase(id) {
+  if (S.role !== 'editor') return;
+  S.editing = S.cases.find(c => c.id === id) || null;
+  go('form');
+}
+
+/* ============ Form ============ */
+function dtField(name, label, opts = {}) {
+  return `<div class="f"><div class="lb ${opts.req ? 'req' : ''}">${label}</div>
+    <div class="dt"><input type="date" id="${name}__d" aria-label="${label} วันที่"><input type="time" id="${name}__t" aria-label="${label} เวลา"><button type="button" class="now" data-now="${name}">ตอนนี้</button></div>
+    ${opts.hint ? `<div class="hint">${opts.hint}</div>` : ''}</div>`;
+}
+const txt = (id, label, o = {}) => `<div class="f"><label for="${id}" class="${o.req ? 'req' : ''}">${label}</label><input id="${id}" type="${o.type || 'text'}" ${o.list ? `list="${o.list}"` : ''} ${o.attrs || ''}>${o.hint ? `<div class="hint">${o.hint}</div>` : ''}</div>`;
+const sel = (id, label, options, o = {}) => `<div class="f"><label for="${id}" class="${o.req ? 'req' : ''}">${label}</label><select id="${id}"><option value="">– เลือก –</option>${options.map(x => Array.isArray(x) ? `<option value="${x[0]}">${x[1]}</option>` : `<option>${x}</option>`).join('')}</select></div>`;
+const chk = (id, label) => `<label class="chk"><input type="checkbox" id="${id}"> ${label}</label>`;
+
+function viewForm() {
+  const e = S.editing;
+  return `<form id="caseForm" class="stack" novalidate>
+  <div class="form-top"><div class="live" id="live"></div></div>
+  <div><h2 style="font-size:18px">${e ? `แก้ไขเคส HN ${esc(e.hn)}${e.patient_name ? ' · ' + esc(e.patient_name) : ''}` : 'บันทึกเคสใหม่'}</h2>
+  <p class="sub">ตามแบบฟอร์ม F/M-MED/002 ฉบับปรับปรุง พ.ศ. 2566 · กรอกเวลาจริง ระบบคำนวณตัวชี้วัดให้เอง</p></div>
+
+  <datalist id="atbList">${ATBS.map(a => `<option value="${a}">`).join('')}</datalist>
+
+  <fieldset><legend>ข้อมูลผู้ป่วย</legend><div class="grid">
+    ${txt('recorder', 'ผู้บันทึก (ชื่อ-ตำแหน่ง)', { req: true, attrs: 'autocomplete="name"', hint: 'เครื่องนี้จะจำชื่อไว้ให้ครั้งต่อไป' })}
+    ${txt('patient_name', 'ชื่อ-สกุลผู้ป่วย', { attrs: 'autocomplete="off" placeholder="เช่น นายสมชาย ใจดี"' })}
+    ${txt('hn', 'HN', { req: true, attrs: 'inputmode="numeric" autocomplete="off"' })}
+    ${txt('an', 'AN', { attrs: 'inputmode="numeric" autocomplete="off"' })}
+    ${sel('sex', 'เพศ', [['M', 'ชาย'], ['F', 'หญิง']])}
+    ${txt('age', 'อายุ (ปี)', { type: 'number', attrs: 'min="0" max="120" inputmode="numeric"' })}
+    ${txt('weight', 'น้ำหนัก (kg)', { type: 'number', attrs: 'min="1" max="300" step="0.1" inputmode="decimal"', hint: 'ใช้คำนวณ fluid 30 ml/kg' })}
+    ${sel('ward', 'หอผู้ป่วย', WARDS)}
+  </div><div class="grid" style="margin-top:12px">${dtField('admit_dt', 'วันเวลา Admit')}</div></fieldset>
+
+  <fieldset><legend>1. Early detection <span class="who">· แพทย์เป็นผู้กรอก</span></legend>
+  <div class="grid">${dtField('dx_dt', 'วันเวลาที่วินิจฉัย Sepsis (time zero)', { req: true, hint: 'ทุกตัวชี้วัดนับเวลาจากจุดนี้' })}
+    ${sel('severity', 'ความรุนแรง', [['sepsis', 'Sepsis'], ['shock', 'Septic shock']])}
+    ${sel('onset', 'การติดเชื้อ', [['community', 'Community-acquired'], ['hospital', 'Hospital-acquired']])}</div>
+  <div class="subhead">เกณฑ์ที่เข้าได้</div>
+  <div class="checks">${chk('sirs', 'SIRS ≥ 2 ข้อ')}${chk('qsofa', 'qSOFA ≥ 2 ข้อ')}</div>
+  <div class="grid" style="margin-top:10px">${txt('mews', 'MEWS score', { type: 'number', attrs: 'min="0" max="20" inputmode="numeric"', hint: 'เข้าเกณฑ์เมื่อ ≥ 4 คะแนน' })}</div>
+  <div class="subhead">Source of infection (เลือกได้หลายข้อ)</div>
+  <div class="checks" id="sourceBox">${SOURCES.map(([k, l]) => `<label class="chk"><input type="checkbox" name="source" value="${k}"> ${l}</label>`).join('')}</div>
+  <div class="grid" style="margin-top:10px">${txt('source_other', 'ระบุตำแหน่ง / แหล่งอื่นๆ')}</div>
+  </fieldset>
+
+  <fieldset><legend>2. Early treatment <span class="who">· พยาบาลเป็นผู้กรอก</span></legend>
+  <div class="subhead" style="margin-top:0">Hemoculture</div>
+  <div class="grid">${dtField('hc1_dt', 'H/C ขวดที่ 1 เวลาที่เจาะ')}${txt('hc1_site', 'Site ขวดที่ 1')}${dtField('hc2_dt', 'H/C ขวดที่ 2 เวลาที่เจาะ')}${txt('hc2_site', 'Site ขวดที่ 2')}</div>
+  <div class="checks" style="margin-top:10px">${chk('hc_not_done', 'ไม่ได้เจาะ H/C')}</div>
+  <div class="grid" style="margin-top:10px" id="hcReasonBox" hidden>${txt('hc_not_done_reason', 'เหตุผลที่ไม่ได้เจาะ H/C', { req: true })}</div>
+  <div class="subhead">Antibiotic</div>
+  <div class="grid">${txt('atb1_name', 'ยาชนิดที่ 1', { list: 'atbList' })}${dtField('atb1_dt', 'เวลาเริ่มให้ยาชนิดที่ 1')}${txt('atb2_name', 'ยาชนิดที่ 2', { list: 'atbList' })}${dtField('atb2_dt', 'เวลาเริ่มให้ยาชนิดที่ 2')}</div>
+  <div class="checks" style="margin-top:10px">${chk('atb_refused', 'มีข้อยกเว้น: ไม่ได้ให้ ATB (ไม่นับในตัวชี้วัด ATB และ H/C)')}</div>
+  <div class="grid" style="margin-top:10px" id="atbReasonBox" hidden>${sel('atb_exception_type', 'ประเภทข้อยกเว้น', [['refused', 'ผู้ป่วย/ญาติปฏิเสธ ATB'], ['no_plan', 'แพทย์ไม่มีแผนให้ ATB']], { req: true })}${txt('atb_exception_reason', 'รายละเอียด', { req: true })}</div>
+  </fieldset>
+
+  <fieldset><legend>3. Hemodynamic resuscitation <span class="who">· พยาบาลเป็นผู้กรอก</span></legend>
+  <div class="grid">${sel('fluid_type', 'IV fluid', FLUIDS)}${dtField('fluid_start_dt', 'เวลาเริ่มให้ IV fluid')}
+    ${txt('fluid_1h_ml', 'ปริมาณ fluid ที่เข้าไปจริงภายใน 60 นาทีหลังวินิจฉัย (ml)', { type: 'number', attrs: 'min="0" max="10000" step="50" inputmode="numeric"', hint: 'นับเฉพาะที่หยดเข้าไปแล้ว ไม่ใช่ปริมาณที่สั่ง · <span id="fluidHint">กรอกน้ำหนักเพื่อดูเป้าหมาย 30 ml/kg</span>' })}</div>
+  <div class="checks" style="margin-top:10px">${chk('fluid_contra', 'มีข้อห้าม/ข้อจำกัดในการให้ 30 ml/kg (ไม่นับในตัวชี้วัด fluid)')}</div>
+  <div class="grid" style="margin-top:10px" id="fluidReasonBox" hidden>${txt('fluid_contra_reason', 'ระบุข้อห้าม', { req: true, attrs: 'placeholder="เช่น CHF EF 25%, ESRD on HD, ภาวะน้ำเกิน"' })}</div>
+  <div class="subhead">Inotropic / vasopressor</div>
+  <div class="grid">${sel('vaso1_name', 'ยาตัวที่ 1', VASOS)}${dtField('vaso1_dt', 'เวลาเริ่มยาตัวที่ 1')}${sel('vaso2_name', 'ยาตัวที่ 2', VASOS)}${dtField('vaso2_dt', 'เวลาเริ่มยาตัวที่ 2')}</div>
+  <div class="subhead">อื่นๆ</div>
+  <div class="checks">${chk('central_line', 'Central line')}${chk('foley', "Foley's catheter")}</div>
+  <div class="grid" style="margin-top:10px">${txt('o2', 'Oxygen support (ระบุ)', { attrs: 'placeholder="เช่น cannula 3 LPM, HFNC, ETT"' })}</div>
+  </fieldset>
+
+  <fieldset><legend>4. Sepsis checklist <span class="who">· แพทย์เป็นผู้กรอก</span></legend>
+  <div class="checks">${chk('lactate_sent', 'ส่ง Serum lactate')}${chk('culture_other', 'UA, U/C, Sputum G/S, C/S ตาม source')}${chk('map65', 'Keep target MAP ≥ 65')}</div>
+  <div class="grid" style="margin-top:10px">${txt('lactate_value', 'ผล lactate (mmol/L)', { type: 'number', attrs: 'min="0" step="0.1" inputmode="decimal"' })}</div>
+  </fieldset>
+
+  <fieldset><legend>5. ภาวะวิกฤตและ Discharge status <span class="who">· กรอกภายหลังได้</span></legend>
+  <div class="checks">${chk('icu_needed', 'ต้องได้รับการดูแลแบบภาวะวิกฤต (ระดับ 4-5) / ย้าย ICU')}</div>
+  <div class="grid" style="margin-top:10px">${dtField('icu_dt', 'เวลาที่เข้ารับการดูแลภาวะวิกฤต / ถึง ICU')}</div>
+  <div class="grid" style="margin-top:12px">${dtField('discharge_dt', 'วันเวลาจำหน่าย')}${sel('discharge_status', 'สถานะจำหน่าย', DISCHARGE)}${txt('refer_to', 'Refer ไป รพ.')}</div>
+  <div class="grid" style="margin-top:12px">${txt('icd_principal', 'ICD-10 Principal Dx', { attrs: 'placeholder="เช่น A419" autocapitalize="characters"' })}${txt('icd_comorbid', 'ICD-10 Comorbidity', { attrs: 'placeholder="คั่นด้วย , เช่น I10, E119" autocapitalize="characters"' })}</div>
+  <div class="f" style="margin-top:12px"><label for="note">หมายเหตุ</label><textarea id="note"></textarea></div>
+  </fieldset>
+
+  <div class="form-actions">
+    <div>${e ? '<button type="button" class="btn danger" id="delBtn">ลบเคสนี้</button>' : ''}</div>
+    <div class="row"><span class="msg" id="formMsg"></span><button type="button" class="btn" id="cancelBtn">ยกเลิก</button><button type="submit" class="btn primary" id="saveBtn">บันทึก</button></div>
+  </div>
+  </form>`;
+}
+
+const DT_FIELDS = ['admit_dt', 'dx_dt', 'hc1_dt', 'hc2_dt', 'atb1_dt', 'atb2_dt', 'fluid_start_dt', 'vaso1_dt', 'vaso2_dt', 'icu_dt', 'discharge_dt'];
+const TEXT_FIELDS = ['patient_name', 'atb_exception_type', 'atb_exception_reason', 'hc_not_done_reason', 'fluid_contra_reason', 'hn', 'an', 'sex', 'age', 'weight', 'ward', 'severity', 'onset', 'mews', 'source_other', 'hc1_site', 'hc2_site', 'atb1_name', 'atb2_name', 'fluid_type', 'fluid_1h_ml', 'vaso1_name', 'vaso2_name', 'o2', 'lactate_value', 'discharge_status', 'refer_to', 'icd_principal', 'icd_comorbid', 'recorder', 'note'];
+const BOOL_FIELDS = ['sirs', 'qsofa', 'hc_not_done', 'atb_refused', 'fluid_contra', 'central_line', 'foley', 'lactate_sent', 'culture_other', 'map65', 'icu_needed'];
+
+function readForm() {
+  const o = S.editing ? { id: S.editing.id } : {};
+  const $ = id => document.getElementById(id);
+  TEXT_FIELDS.forEach(k => o[k] = ($(k).value || '').trim());
+  BOOL_FIELDS.forEach(k => o[k] = $(k).checked ? '1' : '');
+  DT_FIELDS.forEach(k => { const d = $(k + '__d').value, t = $(k + '__t').value; o[k] = d && t ? `${d}T${t}` : (d || ''); });
+  o.source = [...document.querySelectorAll('input[name=source]:checked')].map(i => i.value).join(',');
+  o.icd_principal = o.icd_principal.toUpperCase(); o.icd_comorbid = o.icd_comorbid.toUpperCase();
+  return o;
+}
+function fillForm(c) {
+  const $ = id => document.getElementById(id);
+  TEXT_FIELDS.forEach(k => { if (k !== 'recorder' && c[k] != null) $(k).value = c[k]; });
+  BOOL_FIELDS.forEach(k => $(k).checked = c[k] === '1');
+  DT_FIELDS.forEach(k => { if (c[k]) { const [d, t] = c[k].split('T'); $(k + '__d').value = d; $(k + '__t').value = (t || '').slice(0, 5); } });
+  const srcs = (c.source || '').split(',');
+  document.querySelectorAll('input[name=source]').forEach(i => i.checked = srcs.includes(i.value));
+}
+function localNow() { const d = new Date(); return [`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, `${pad(d.getHours())}:${pad(d.getMinutes())}`]; }
+
+function updateLive() {
+  const o = readForm(); const r = evaluate(o); const v = validateCase(o);
+  const $ = id => document.getElementById(id);
+  $('hcReasonBox').hidden = o.hc_not_done !== '1';
+  $('atbReasonBox').hidden = o.atb_refused !== '1';
+  $('fluidReasonBox').hidden = o.fluid_contra !== '1';
+  const atbTxt = r.atbMin == null ? '' : ` (${Math.round(r.atbMin)} นาที)`;
+  const hint = $('fluidHint');
+  if (hint) hint.textContent = r.fluidTarget ? `เป้าหมาย ≥ ${r.fluidTarget.toLocaleString()} ml (30 × ${o.weight} kg) และเริ่มให้ภายใน 60 นาที` : 'กรอกน้ำหนักเพื่อดูเป้าหมาย 30 ml/kg';
+  const dup = findDuplicate(o);
+  const warns = v.warnings.slice();
+  if (dup) warns.unshift(`มีเคส HN ${o.hn} วินิจฉัยเมื่อ ${fmtDT(dup.dx_dt)} อยู่แล้ว อาจเป็นเคสซ้ำ`);
+  $('live').innerHTML = `<div class="pills">
+    <span class="pill ${r.atb}">ATB ภายใน 1 ชม.: ${PILL_TXT[r.atb]}${atbTxt}</span>
+    ${pill('H/C ก่อน ATB', r.hc)}${pill('Fluid 30 ml/kg', r.fluid)}${r.icu !== 'na' ? pill('ภาวะวิกฤต 3 ชม.', r.icu) : ''}${pill('Bundle 4 ข้อ', r.bundle)}
+    ${o.discharge_status ? `<span class="pill na">${esc(DIS[o.discharge_status])}</span>` : '<span class="pill open">ยังไม่ลง outcome</span>'}
+  </div>${warns.length ? `<ul class="vlist warn">${warns.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}`;
+  return v;
+}
+function findDuplicate(o) {
+  if (!o.hn || !hasTime(o.dx_dt)) return null;
+  if (S.editing && S.editing.hn === o.hn && S.editing.dx_dt === o.dx_dt) return null;
+  return S.cases.find(c => c.id !== o.id && c.hn === o.hn && (m => m != null && Math.abs(m) < 24 * 60)(mins(c.dx_dt, o.dx_dt))) || null;
+}
+function recorderName() { try { return localStorage.getItem('sepsis_recorder') || ''; } catch (e) { return ''; } }
+function rememberRecorder(n) { try { localStorage.setItem('sepsis_recorder', n); } catch (e) { } }
+function bindForm() {
+  const form = document.getElementById('caseForm');
+  if (S.editing) fillForm(S.editing);
+  document.getElementById('recorder').value = recorderName();
+  if (!S.editing) {
+    // ค่าเริ่มต้น: วันที่วินิจฉัย = วันนี้
+    const [d] = localNow(); document.getElementById('dx_dt__d').value = d;
+  }
+  // กรอกเวลาแล้วยังไม่ใส่วันที่ → ใช้วันเดียวกับวันวินิจฉัย
+  DT_FIELDS.forEach(k => {
+    const t = document.getElementById(k + '__t'), dd = document.getElementById(k + '__d');
+    t.addEventListener('change', () => { if (t.value && !dd.value) dd.value = document.getElementById('dx_dt__d').value || localNow()[0]; updateLive(); });
+  });
+  form.addEventListener('click', e => {
+    const b = e.target.closest('[data-now]'); if (!b) return;
+    const [d, t] = localNow(); document.getElementById(b.dataset.now + '__d').value = d; document.getElementById(b.dataset.now + '__t').value = t; updateLive();
+  });
+  form.addEventListener('input', updateLive);
+  form.addEventListener('change', updateLive);
+  updateLive();
+  document.getElementById('cancelBtn').onclick = () => { S.editing = null; go(S.cases.length ? 'list' : 'dash'); };
+  const del = document.getElementById('delBtn');
+  if (del) {
+    let armed = false;
+    del.onclick = async () => {
+      if (!armed) { armed = true; del.textContent = 'กดอีกครั้งเพื่อยืนยันการลบ'; setTimeout(() => { armed = false; del.textContent = 'ลบเคสนี้'; }, 4000); return; }
+      try { const rn = document.getElementById('recorder').value.trim(); if (!rn) throw new Error('กรุณากรอกชื่อผู้บันทึกก่อนลบเคส'); await call('deleteCase', S.code, S.editing.id, rn); await reload(); S.editing = null; toast('ลบเคสแล้ว'); go('list'); }
+      catch (x) { document.getElementById('formMsg').className = 'msg err'; document.getElementById('formMsg').textContent = x.message; }
+    };
+  }
+  let dupArmed = false;
+  form.addEventListener('input', () => { dupArmed = false; });
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = document.getElementById('formMsg'); const btn = document.getElementById('saveBtn');
+    const o = readForm();
+    const v = validateCase(o);
+    if (v.errors.length) {
+      msg.className = 'msg err';
+      msg.innerHTML = `แก้ไขก่อนบันทึก:<ul class="vlist err">${v.errors.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+      return;
+    }
+    if (findDuplicate(o) && !dupArmed) {
+      dupArmed = true; msg.className = 'msg err';
+      msg.textContent = 'อาจเป็นเคสซ้ำ (HN เดียวกัน วินิจฉัยห่างกันไม่ถึง 24 ชม.) ถ้าไม่ใช่เคสซ้ำ กดบันทึกอีกครั้ง';
+      btn.textContent = 'ยืนยันบันทึก'; return;
+    }
+    if (S.editing) o._base = S.editing.updated_at || '';
+    if (dupArmed) o._allowDup = '1';
+    btn.disabled = true; msg.className = 'msg'; msg.textContent = 'กำลังบันทึก…';
+    try {
+      const saved = await call('saveCase', S.code, o);
+      rememberRecorder(o.recorder);
+      await reload();
+      toast(o.id ? 'บันทึกการแก้ไขแล้ว' : 'บันทึกเคสใหม่แล้ว');
+      S.editing = null;
+      go(o.id ? 'list' : 'dash');
+    } catch (x) {
+      btn.disabled = false; btn.textContent = 'บันทึก';
+      const m = String(x.message || x);
+      if (m.indexOf('DUPLICATE:') >= 0) {
+        dupArmed = true; btn.textContent = 'ยืนยันบันทึก'; msg.className = 'msg err';
+        msg.textContent = m.split('DUPLICATE:')[1].trim() + ' ถ้าไม่ใช่เคสซ้ำ กดบันทึกอีกครั้ง';
+      } else if (m.indexOf('CONFLICT:') >= 0) {
+        msg.className = 'msg err';
+        msg.innerHTML = `${esc(m.split('CONFLICT:')[1].trim())} ข้อมูลที่คุณแก้ยังไม่ถูกบันทึก <button type="button" class="btn" id="reloadCase">โหลดข้อมูลล่าสุด</button>`;
+        document.getElementById('reloadCase').onclick = async () => { const id = S.editing.id; await reload(); S.editing = S.cases.find(c => c.id === id) || null; render(); toast('โหลดข้อมูลล่าสุดแล้ว กรุณาแก้ไขอีกครั้ง'); };
+      } else { msg.className = 'msg err'; msg.textContent = m; }
+    }
+  });
+}
+
+/* ============ Definitions ============ */
+function viewDefs() {
+  return `<section class="panel"><h2>นิยามตัวชี้วัดที่ระบบใช้คำนวณ</h2><p class="sub">ค่าเริ่มต้นที่รอทีม PCT ยืนยัน ถ้าตกลงต่างจากนี้ ให้แก้ในส่วน "กฎตัวชี้วัด" ของโค้ดทั้ง 2 ไฟล์</p>
+  <dl class="defs">
+    <dt>เวลาเริ่มนับ (time zero)</dt><dd>วันเวลาที่แพทย์วินิจฉัย Sepsis ต้องกรอกทั้งวันและเวลา ทุกตัวชี้วัดที่เป็นเวลานับจากจุดนี้</dd>
+    <dt>ข้อมูลไม่ครบ</dt><dd>ถ้าเวลาที่ต้องใช้คำนวณไม่ได้กรอก หรือกรอกแค่วันที่ไม่มีเวลา ระบบจะไม่ตัดสินผ่านหรือไม่ผ่าน แต่นับเป็น "ไม่ลงเวลา" ซึ่งอยู่ในตัวหารและไม่อยู่ในตัวตั้ง เพื่อให้เห็นปัญหาการลงบันทึก</dd>
+    <dt>อัตราการได้รับ Antibiotic ภายใน 1 ชม.</dt><dd>เวลาเริ่มให้ ATB ชนิดที่ 1 ลบเวลาวินิจฉัย ไม่เกิน 60 นาทีถือว่าผ่าน ถ้าให้ ATB ก่อนเวลาวินิจฉัยนับว่าผ่าน และถ้าก่อนเกิน 60 นาทีจะมีคำเตือนให้ทบทวน เคสที่มีข้อยกเว้น (ผู้ป่วย/ญาติปฏิเสธ หรือแพทย์ไม่มีแผนให้ ATB) ไม่นับทั้งตัวตั้งและตัวหาร และต้องระบุเหตุผล</dd>
+    <dt>อัตราการเจาะ H/C ก่อนให้ Antibiotic</dt><dd>เวลาเจาะ H/C ขวดที่ 1 ต้องไม่ช้ากว่าเวลาเริ่ม ATB ชนิดที่ 1 เวลาเดียวกันนับว่าผ่าน เคสที่ติ๊ก "ไม่ได้เจาะ H/C" นับว่าไม่ผ่าน และต้องระบุเหตุผล</dd>
+    <dt>อัตราการได้รับ IV fluid 30 ml/kg ใน 1 ชม. แรก</dt><dd>ผ่านเมื่อเริ่มให้ fluid ภายใน 60 นาทีหลังวินิจฉัย และปริมาณที่เข้าไปจริงภายใน 60 นาที ≥ 30 × น้ำหนัก (kg) ปริมาณนี้ผู้กรอกเป็นผู้ยืนยัน ให้นับเฉพาะที่หยดเข้าไปแล้ว ไม่ใช่ที่สั่ง เคสที่มีข้อห้ามไม่นับ และต้องระบุข้อห้าม</dd>
+    <dt>1-hour bundle ครบ 4 ข้อ</dt><dd>ผ่านเมื่อครบทั้ง ATB ภายใน 1 ชม., H/C ก่อน ATB, ส่ง serum lactate และ IV fluid 30 ml/kg (ถ้ามีข้อห้าม ข้อ fluid ถือว่าผ่าน) ส่วน H/C ครบ 2 ขวด, culture ตาม source และ MAP ≥ 65 แสดงแยกเป็นการดูแลตาม checklist ไม่นับในสูตร bundle</dd>
+    <dt>อัตราที่ได้รับการดูแลแบบภาวะวิกฤต (ระดับ 4-5) ภายใน 3 ชม.</dt><dd>คิดเฉพาะเคสที่ติ๊กว่าต้องได้รับการดูแลภาวะวิกฤต เวลาที่เข้ารับการดูแลลบเวลาวินิจฉัย ไม่เกิน 180 นาทีถือว่าผ่าน</dd>
+    <dt>อัตราตาย</dt><dd>จำนวนผู้ป่วยที่เสียชีวิตรวมกับปฏิเสธการรักษาเพื่อกลับไปเสียชีวิตที่บ้าน หารด้วยผู้ป่วยที่ลงสถานะจำหน่ายแล้ว เคสที่ยังไม่ลง outcome ไม่นับในตัวหาร แสดงแยกอัตราตายของ community-acquired ด้วย</dd>
+    <dt>การตรวจข้อมูลก่อนบันทึก</dt><dd>ระบบไม่ให้บันทึกเมื่อค่าตัวเลขอยู่นอกช่วง (อายุ 0–120 ปี, น้ำหนัก 1–300 kg, fluid 0–10,000 ml, MEWS 0–20, lactate 0–30) เวลาห่างจากเวลาวินิจฉัยเกินช่วงก่อน 24 ชม. ถึงหลัง 7 วัน ข้อมูลขัดกัน หรือใช้ข้อยกเว้นโดยไม่ระบุเหตุผล ตรวจทั้งที่หน้าเว็บและฝั่ง Sheet</dd>
+    <dt>เคสซ้ำและการแก้ไขพร้อมกัน</dt><dd>HN เดียวกันที่วินิจฉัยห่างกันไม่ถึง 24 ชม. ต้องกดยืนยันก่อนบันทึก ถ้ามีคนแก้เคสเดียวกันไปก่อน ระบบจะไม่บันทึกทับ และให้โหลดข้อมูลล่าสุดก่อน</dd>
+    <dt>ประวัติการแก้ไข</dt><dd>ทุกการเพิ่ม แก้ไข และลบ ถูกบันทึกในแท็บ Log ของ Google Sheet พร้อมเวลา ชื่อผู้บันทึก และค่าที่เปลี่ยน การลบเป็นการทำเครื่องหมายไว้ ข้อมูลยังอยู่ใน Sheet</dd>
+    <dt>ปีงบประมาณ / ไตรมาส</dt><dd>จัดตามวันที่วินิจฉัย ปีงบประมาณเริ่ม 1 ต.ค. ไตรมาส 1 = ต.ค.–ธ.ค., 2 = ม.ค.–มี.ค., 3 = เม.ย.–มิ.ย., 4 = ก.ค.–ก.ย.</dd>
+  </dl></section>`;
+}
+
+/* ============ Demo backend (ใช้เมื่อเปิดไฟล์นอก Apps Script) ============ */
+const Demo = (() => {
+  let rows = null;
+  function rnd(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+  function iso(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+  function build() {
+    const r = rnd(20569); const out = [];
+    const start = new Date(2025, 9, 1);
+    const srcKeys = ['resp', 'resp', 'resp', 'uti', 'uti', 'uti', 'gi', 'gi', 'skin', 'unknown', 'cns'];
+    const drugs = ['Ceftriaxone', 'Ceftriaxone', 'Piperacillin/tazobactam (Tazocin)', 'Meropenem', 'Ceftazidime'];
+    for (let i = 0; i < 118; i++) {
+      const dx = new Date(start.getTime() + r() * 364 * 864e5); dx.setMinutes(Math.floor(r() * 12) * 5);
+      if (dx > new Date(2026, 8, 29)) continue;
+      const q = dx.getMonth() >= 9 ? 0 : dx.getMonth() <= 2 ? 1 : dx.getMonth() <= 5 ? 2 : 3;
+      const skill = [0.62, 0.8, 0.74, 0.86][q];
+      const atbDelay = r() < skill ? -20 + r() * 78 : 62 + r() * 120;
+      const atb = new Date(dx.getTime() + atbDelay * 6e4);
+      const hc = new Date(atb.getTime() - (r() < 0.86 ? 5 + r() * 40 : -15 - r() * 30) * 6e4);
+      const w = Math.round(42 + r() * 38);
+      const shock = r() < 0.28;
+      const contra = r() < 0.25;
+      const fluidMl = contra ? '' : String(Math.round((r() < (q === 0 ? 0.6 : 0.4) ? 30 * w + r() * 400 : 500 + r() * 700) / 50) * 50);
+      const icu = shock && r() < 0.7;
+      const closedCase = i < 108 || r() < 0.3;
+      const died = closedCase && r() < (shock ? 0.28 : 0.05);
+      const dis = new Date(dx.getTime() + (2 + r() * 14) * 864e5);
+      const missAtb = r() < 0.05;
+      const src = srcKeys[Math.floor(r() * srcKeys.length)];
+      out.push({
+        id: 'demo-' + i, patient_name: ['นาย', 'นาง', 'น.ส.'][Math.floor(r() * 3)] + ['สมชาย', 'สมศรี', 'วิชัย', 'มาลี', 'บุญส่ง', 'ปราณี', 'สุนทร', 'อำไพ'][Math.floor(r() * 8)] + ' ' + ['ใจดี', 'รัตนมงคล', 'สุขเกษม', 'แซ่ตั้ง', 'อภิวัฒนา', 'บำรุงจิต'][Math.floor(r() * 6)] + '', hn: String(90000000 + Math.floor(r() * 999999)), an: '', sex: r() < 0.5 ? 'M' : 'F', age: String(Math.round(25 + r() * 70)), weight: String(w),
+        ward: ['หอผู้ป่วยในชาย', 'หอผู้ป่วยในหญิง', 'ER'][Math.floor(r() * 3)], admit_dt: iso(new Date(dx.getTime() - r() * 3 * 36e5)),
+        dx_dt: iso(dx), severity: shock ? 'shock' : 'sepsis', onset: r() < 0.85 ? 'community' : 'hospital', sirs: '1', qsofa: r() < 0.5 ? '1' : '', mews: String(4 + Math.floor(r() * 4)),
+        source: src + (r() < 0.12 ? ',uti' : ''), hc1_dt: missAtb ? '' : iso(hc), hc1_site: 'Rt arm', hc2_dt: missAtb || r() < 0.2 ? '' : iso(new Date(hc.getTime() + 5 * 6e4)), hc2_site: 'Lt arm', hc_not_done: '',
+        culture_other: r() < 0.85 ? '1' : '', map65: shock ? (r() < 0.8 ? '1' : '') : '1',
+        atb1_name: drugs[Math.floor(r() * drugs.length)], atb1_dt: missAtb ? '' : iso(atb), atb_refused: '',
+        fluid_type: 'NSS', fluid_start_dt: iso(new Date(dx.getTime() + 10 * 6e4)), fluid_1h_ml: fluidMl, fluid_contra: contra ? '1' : '',
+        vaso1_name: shock ? 'Norepinephrine (Levophed)' : '', vaso1_dt: shock ? iso(new Date(dx.getTime() + 50 * 6e4)) : '',
+        lactate_sent: r() < 0.7 ? '1' : '', icu_needed: icu ? '1' : '', icu_dt: icu ? iso(new Date(dx.getTime() + (60 + r() * 200) * 6e4)) : '',
+        discharge_dt: closedCase ? iso(dis) : '', discharge_status: closedCase ? (died ? 'dead' : ['improve', 'improve', 'complete', 'refer'][Math.floor(r() * 4)]) : '',
+        icd_principal: { resp: 'J189', uti: 'N390', gi: 'A099', skin: 'L031', unknown: 'A419', cns: 'G039' }[src]
+      });
+    }
+    return out;
+  }
+  const wait = v => new Promise(res => setTimeout(() => res(v), 120));
+  return {
+    login(code) { if (code === 'edit') return wait({ role: 'editor' }); if (code === 'view') return wait({ role: 'viewer' }); return Promise.reject(new Error('รหัสผ่านไม่ถูกต้อง')); },
+    listCases(code) { if (!rows) rows = build(); const view = code === 'view'; return wait(rows.map(c => { const o = { ...c }; if (view) { delete o.hn; delete o.an; delete o.note; delete o.patient_name; } return o; })); },
+    saveCase(code, rec) { if (code !== 'edit') return Promise.reject(new Error('รหัสนี้ดูได้อย่างเดียว')); const v = validateCase(rec); if (v.errors.length) return Promise.reject(new Error('ข้อมูลไม่ถูกต้อง: ' + v.errors.join(' · '))); const o = { ...rec }; delete o._base; delete o._allowDup; o.updated_at = new Date().toISOString(); if (o.id) { const i = rows.findIndex(c => c.id === o.id); rows[i] = o; } else { o.id = 'demo-' + Date.now(); rows.push(o); } return wait(o); },
+    deleteCase(code, id) { rows = rows.filter(c => c.id !== id); return wait(true); }
+  };
+})();
+
+/* ============ Boot ============ */
+function syncHeader() { const h = document.querySelector('.appbar'); if (h) document.documentElement.style.setProperty('--hdr', h.offsetHeight + 'px'); }
+window.addEventListener('resize', syncHeader);
+(async function boot() {
+  renderShell();
+  if (IS_GAS) { try { await doLogin(''); return; } catch (e) { } }
+  const saved = ss('sepsis_code');
+  if (saved) { try { await doLogin(saved); return; } catch (e) { ss('sepsis_code', null); } }
+  if (!IS_GAS) { try { await doLogin('edit'); return; } catch (e) { } }
+  renderLogin();
+})();
+</script>
+
+</body>
+</html>
