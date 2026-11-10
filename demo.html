@@ -181,6 +181,9 @@ legend .who { font-weight: 500; color: var(--muted); font-size: 12.5px; }
 .f .hint { font-size: 12px; color: var(--muted); }
 .req::after { content: " *"; color: var(--bad); }
 .dt { display: grid; grid-template-columns: 1.3fr 1fr auto; gap: 6px; }
+.unk { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); margin-top: 2px; cursor: pointer; }
+.unk input { margin: 0; accent-color: var(--accent); }
+.vlist .nd { min-height: 0; padding: 1px 8px; font-size: 12px; margin-left: 6px; }
 .dt .now { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 0 8px; font-size: 12px; cursor: pointer; color: var(--ink-2); }
 .checks { display: flex; flex-wrap: wrap; gap: 6px 8px; }
 .chk { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; cursor: pointer; background: var(--surface); font-size: 14px; }
@@ -342,7 +345,10 @@ function call(fn, ...args) {
 }
 
 /* ============ Lookups ============ */
-const WARDS = ['ER', 'หอผู้ป่วยในชาย', 'หอผู้ป่วยในหญิง', 'หอผู้ป่วยพิเศษ', 'ICU', 'อื่นๆ'];
+const WARDS = ['ER', 'หอผู้ป่วยสามัญ', 'หอผู้ป่วยพิเศษ', 'ICU', 'อื่นๆ'];
+// ข้อมูลเก่าที่ลงเป็นหอชาย/หญิง ให้นับรวมเป็นหอผู้ป่วยสามัญ
+const WARD_ALIAS = { 'หอผู้ป่วยในชาย': 'หอผู้ป่วยสามัญ', 'หอผู้ป่วยในหญิง': 'หอผู้ป่วยสามัญ' };
+const wardOf = c => WARD_ALIAS[c.ward] || c.ward || '';
 const SOURCES = [
   ['resp', 'Respiratory tract'], ['gi', 'GI tract'], ['uti', 'Urinary tract'], ['cns', 'CNS'],
   ['ocular', 'Ocular'], ['skin', 'Skin & soft tissue'], ['unknown', 'ไม่ทราบแหล่ง'], ['other', 'อื่นๆ']
@@ -360,7 +366,7 @@ const TH_MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.'
 const FY_MONTHS = [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8]; // ต.ค. → ก.ย.
 
 /* ===== กฎตัวชี้วัดและการตรวจข้อมูล (ชุดเดียวกันทั้งหน้าเว็บและฝั่ง Sheet) ===== */
-const RULES = { ATB_MIN: 60, ICU_MIN: 180, FLUID_ML_PER_KG: 30, FLUID_WINDOW_MIN: 60, EARLIEST_MIN: -24 * 60, LATEST_MIN: 7 * 24 * 60 };
+const RULES = { ATB_MIN: 60, ICU_MIN: 180, FLUID_ML_PER_KG: 30, FLUID_WINDOW_MIN: 60, EARLIEST_MIN: -24 * 60, LATEST_MIN: 7 * 24 * 60, NEXTDAY_MIN: 12 * 60, FLUID_LOW_ML_PER_KG: 10 };
 const EVENT_LABELS = { hc1_dt: 'เวลาเจาะ H/C ขวดที่ 1', hc2_dt: 'เวลาเจาะ H/C ขวดที่ 2', atb1_dt: 'เวลาให้ ATB ชนิดที่ 1', atb2_dt: 'เวลาให้ ATB ชนิดที่ 2', fluid_start_dt: 'เวลาเริ่ม IV fluid', vaso1_dt: 'เวลาเริ่มยากระตุ้นความดันตัวที่ 1', vaso2_dt: 'เวลาเริ่มยากระตุ้นความดันตัวที่ 2', icu_dt: 'เวลาเข้ารับการดูแลภาวะวิกฤต' };
 const NUM_RANGES = [['age', 'อายุ', 0, 120], ['weight', 'น้ำหนัก', 1, 300], ['fluid_1h_ml', 'ปริมาณ IV fluid', 0, 10000], ['mews', 'MEWS', 0, 20], ['lactate_value', 'ผล lactate', 0, 30]];
 
@@ -374,17 +380,55 @@ function mins(a, b) { if (!hasTime(a) || !hasTime(b)) return null; return (toDat
 function dayDiff(a, b) { if (!hasDate(a) || !hasDate(b)) return null; return Math.round((toDate(b.slice(0, 10)) - toDate(a.slice(0, 10))) / 864e5); }
 function numOf(v) { if (v === '' || v == null) return null; const n = Number(v); return isFinite(n) ? n : NaN; }
 
+/** รายชื่อช่องเวลาที่ผู้กรอกติ๊ก "ไม่ทราบเวลา" (เก็บในคอลัมน์ time_unknown คั่นด้วย ,) */
+function unknownTimes(c) { return String(c.time_unknown || '').split(',').filter(Boolean); }
+/** เวลา ATB ที่เร็วที่สุดของชนิดที่ 1/2 (เฉพาะที่มีเวลา) · unknown = มี ATB ที่ไม่ทราบเวลา จึงยืนยันว่าเร็วที่สุดไม่ได้ */
+function atbEarliest(c) {
+  let best = null, unknown = false;
+  ['atb1_dt', 'atb2_dt'].forEach(function (k) {
+    const v = c[k];
+    if (hasTime(v)) { if (best == null || toDate(v) < toDate(best)) best = v; }
+    else if (hasDate(v)) unknown = true;
+  });
+  return { t: best, unknown: unknown };
+}
+/** ช่องเวลาที่เป็น 00:00 พอดี และไม่ได้ติ๊ก "ไม่ทราบเวลา" (มักเป็นค่าที่ใส่แทนไม่ทราบ) */
+function midnightKeys(c) {
+  const unk = unknownTimes(c);
+  return ['dx_dt'].concat(Object.keys(EVENT_LABELS)).filter(function (k) { return hasTime(c[k]) && c[k].slice(11, 16) === '00:00' && unk.indexOf(k) < 0; });
+}
+/** ช่องเวลาที่อยู่ก่อนเวลาวินิจฉัยเกิน 12 ชม. (และยังไม่ถึงเกณฑ์ error 24 ชม.) สงสัยว่าหมายถึงวันถัดไป */
+function nextDayKeys(c) {
+  return Object.keys(EVENT_LABELS).filter(function (k) {
+    const m = mins(c.dx_dt, c[k]);
+    return m != null && m < -RULES.NEXTDAY_MIN && m >= RULES.EARLIEST_MIN;
+  });
+}
+/** ปริมาณ fluid ต่อ kg ที่ดูต่ำผิดปกติ (อาจกรอกเป็น ml/hr) คืนค่า ml/kg หรือ null */
+function fluidLowPerKg(c) {
+  const w = numOf(c.weight), ml = numOf(c.fluid_1h_ml);
+  if (c.fluid_contra === '1' || w == null || isNaN(w) || w < 1 || ml == null || isNaN(ml) || ml <= 0) return null;
+  return ml / w < RULES.FLUID_LOW_ML_PER_KG ? ml / w : null;
+}
+
 /** ประเมินตัวชี้วัดของเคสหนึ่งเคส: pass / fail / missing (ข้อมูลไม่ครบ) / na (ไม่นับ) */
 function evaluate(c) {
   const r = {};
-  r.atbMin = mins(c.dx_dt, c.atb1_dt);
+  const ae = atbEarliest(c);
+  r.atbMin = ae.t == null ? null : mins(c.dx_dt, ae.t);
   if (c.atb_refused === '1') r.atb = 'na';
   else if (r.atbMin == null) r.atb = 'missing';
-  else r.atb = r.atbMin <= RULES.ATB_MIN ? 'pass' : 'fail';
+  else if (r.atbMin <= RULES.ATB_MIN) r.atb = 'pass';
+  else r.atb = ae.unknown ? 'missing' : 'fail'; // ยังมี ATB ที่ไม่ทราบเวลา อาจให้ทันเวลาก็ได้
 
   if (c.atb_refused === '1') r.hc = 'na';
   else if (c.hc_not_done === '1') r.hc = 'fail';
-  else { const d = mins(c.hc1_dt, c.atb1_dt); r.hc = d == null ? 'missing' : (d >= 0 ? 'pass' : 'fail'); }
+  else {
+    const d = ae.t == null ? null : mins(c.hc1_dt, ae.t); // H/C เทียบกับ ATB ที่เร็วที่สุด
+    if (d == null) r.hc = 'missing';
+    else if (d < 0) r.hc = 'fail';
+    else r.hc = ae.unknown ? 'missing' : 'pass';
+  }
 
   const w = numOf(c.weight), ml = numOf(c.fluid_1h_ml);
   const wOk = w != null && !isNaN(w) && w >= 1 && w <= 300;
@@ -397,23 +441,51 @@ function evaluate(c) {
   if (c.icu_needed !== '1') r.icu = 'na';
   else { r.icuMin = mins(c.dx_dt, c.icu_dt); r.icu = r.icuMin == null ? 'missing' : (r.icuMin <= RULES.ICU_MIN ? 'pass' : 'fail'); }
 
-  r.lactate = c.lactate_sent === '1';
+  // lactate_sent: '1' = ส่ง, '0' = ไม่ส่ง, 'unknown' = ไม่ทราบ (ข้อมูลไม่ครบ ไม่ใช่ไม่ผ่าน)
+  // ข้อมูลเก่าที่เว้นว่างแต่มีผล lactate แล้ว ถือว่าส่งแล้ว · เว้นว่างและไม่มีผล = ไม่ระบุ (ไม่ครบ)
+  const lv = numOf(c.lactate_value);
+  if (c.lactate_sent === '1') r.lactate = 'pass';
+  else if (c.lactate_sent === '0') r.lactate = 'fail';
+  else if (!c.lactate_sent && lv != null && !isNaN(lv)) r.lactate = 'pass';
+  else r.lactate = 'missing';
   // 1-hour bundle = ATB ≤ 60 นาที + H/C ก่อน ATB + ส่ง lactate + fluid 30 ml/kg (ยกเว้นมีข้อห้าม)
   if (r.atb === 'na') r.bundle = 'na';
   else {
-    const parts = [r.atb, r.hc, r.fluid === 'na' ? 'pass' : r.fluid, r.lactate ? 'pass' : 'fail'];
+    const parts = [r.atb, r.hc, r.fluid === 'na' ? 'pass' : r.fluid, r.lactate];
     r.bundle = parts.indexOf('fail') >= 0 ? 'fail' : parts.indexOf('missing') >= 0 ? 'missing' : 'pass';
   }
   r.closed = !!c.discharge_status;
   r.dead = c.discharge_status === 'dead' || c.discharge_status === 'dar_dying';
   const los = dayDiff(c.admit_dt || c.dx_dt, c.discharge_dt);
   r.los = los == null ? null : Math.max(0, los);
+
+  // ความครบของข้อมูล: true = ครบ, false = ไม่ครบ, null = ไม่นับ
+  r.cmp = {
+    dx: hasTime(c.dx_dt),
+    atb: c.atb_refused === '1' ? null : ae.t != null,
+    hc: c.atb_refused === '1' ? null : (c.hc_not_done === '1' || hasTime(c.hc1_dt)),
+    weight: wOk,
+    lactate: r.lactate !== 'missing',
+    outcome: !!c.discharge_status
+  };
+  // รายการที่ต้องแก้ข้อมูล (แยกจากเคสที่ต้องทบทวนเพราะไม่ผ่านตัวชี้วัด)
+  r.issues = [];
+  if (!r.cmp.dx) r.issues.push('ไม่มีเวลาวินิจฉัย');
+  if (r.atb === 'missing') r.issues.push('เวลา ATB ไม่ครบ');
+  if (r.hc === 'missing') r.issues.push('เวลา H/C ไม่ครบ');
+  if (!wOk) r.issues.push('ไม่มีน้ำหนัก');
+  if (r.fluid === 'missing') r.issues.push('ข้อมูล fluid ไม่ครบ');
+  if (r.icu === 'missing') r.issues.push('ไม่มีเวลาเข้าภาวะวิกฤต');
+  if (r.lactate === 'missing') r.issues.push('lactate ไม่ระบุ/ไม่ทราบ');
+  if (nextDayKeys(c).length) r.issues.push('เวลาอยู่ก่อนวินิจฉัยเกิน 12 ชม. (วันผิด?)');
+  if (midnightKeys(c).length) r.issues.push('มีเวลา 00:00 ที่ควรตรวจ');
+  if (fluidLowPerKg(c) != null) r.issues.push('fluid ต่ำผิดปกติ (อาจเป็น ml/hr)');
   return r;
 }
 
-/** ตรวจข้อมูลก่อนบันทึก: errors = ต้องแก้ก่อนบันทึก, warnings = ให้ตรวจแต่บันทึกได้ */
+/** ตรวจข้อมูลก่อนบันทึก: errors = ต้องแก้ก่อนบันทึก, warnings = ให้ตรวจแต่บันทึกได้, nextDay = [{key, text}] คำเตือนที่เสนอให้เลื่อนเป็นวันถัดไป */
 function validateCase(c) {
-  const errors = [], warnings = [];
+  const errors = [], warnings = [], nextDay = [];
   const hn = String(c.hn || '').trim();
   if (!hn) errors.push('กรุณากรอก HN');
   else if (!/^[0-9A-Za-z-]{3,15}$/.test(hn)) errors.push('HN ต้องเป็นตัวเลขหรือตัวอักษร 3–15 ตัว ไม่มีช่องว่าง');
@@ -425,10 +497,20 @@ function validateCase(c) {
     if (v != null && (isNaN(v) || v < x[2] || v > x[3])) errors.push(x[1] + ' ต้องอยู่ระหว่าง ' + x[2] + '–' + x[3]);
   });
 
+  const unk = unknownTimes(c);
   Object.keys(EVENT_LABELS).forEach(function (k) {
-    if (hasDate(c[k]) && !hasTime(c[k])) warnings.push(EVENT_LABELS[k] + ' มีแต่วันที่ ยังไม่มีเวลา ระบบจะนับเป็นข้อมูลไม่ครบ');
+    const flagged = unk.indexOf(k) >= 0;
+    if (flagged && hasTime(c[k])) errors.push(EVENT_LABELS[k] + ' ติ๊ก "ไม่ทราบเวลา" แต่มีเวลากรอกไว้ เลือกอย่างใดอย่างหนึ่ง');
+    if (hasDate(c[k]) && !hasTime(c[k]) && !flagged) warnings.push(EVENT_LABELS[k] + ' มีแต่วันที่ ยังไม่มีเวลา ระบบจะนับเป็นข้อมูลไม่ครบ ถ้าไม่ทราบเวลาให้ติ๊ก "ไม่ทราบเวลา"');
     const m = mins(c.dx_dt, c[k]);
     if (m != null && (m < RULES.EARLIEST_MIN || m > RULES.LATEST_MIN)) errors.push(EVENT_LABELS[k] + ' ห่างจากเวลาวินิจฉัยเกินช่วงที่รับได้ (ก่อน 24 ชม. ถึงหลัง 7 วัน) ตรวจวันที่อีกครั้ง');
+  });
+  nextDayKeys(c).forEach(function (k) {
+    const t = EVENT_LABELS[k] + ' อยู่ก่อนเวลาวินิจฉัย ' + Math.round(-mins(c.dx_dt, c[k]) / 60) + ' ชม. หมายถึงวันถัดไปหรือไม่';
+    warnings.push(t); nextDay.push({ key: k, text: t });
+  });
+  midnightKeys(c).forEach(function (k) {
+    warnings.push((k === 'dx_dt' ? 'เวลาวินิจฉัย' : EVENT_LABELS[k]) + ' เป็น 00:00 น. ถ้าไม่ทราบเวลาจริงให้ติ๊ก "ไม่ทราบเวลา" แทนการใส่ 00:00');
   });
   if (hasTime(c.admit_dt) && mins(c.dx_dt, c.admit_dt) > 24 * 60) errors.push('วันเวลา admit อยู่หลังเวลาวินิจฉัยเกิน 24 ชม.');
   if (hasDate(c.discharge_dt) && dayDiff(c.dx_dt, c.discharge_dt) < 0) errors.push('วันจำหน่ายอยู่ก่อนวันวินิจฉัย');
@@ -438,21 +520,28 @@ function validateCase(c) {
   if (c.hc_not_done === '1' && !String(c.hc_not_done_reason || '').trim()) errors.push('กรุณาระบุเหตุผลที่ไม่ได้เจาะ H/C');
   if (c.hc2_dt && !c.hc1_dt) errors.push('มีเวลาเจาะ H/C ขวดที่ 2 แต่ไม่มีขวดที่ 1');
   if (c.atb_refused === '1') {
-    if (c.atb1_dt) errors.push('ติ๊กข้อยกเว้น ATB แต่มีเวลาให้ ATB เลือกอย่างใดอย่างหนึ่ง');
+    if (c.atb1_dt || c.atb2_dt) errors.push('ติ๊กข้อยกเว้น ATB แต่มีเวลาให้ ATB เลือกอย่างใดอย่างหนึ่ง');
     if (!c.atb_exception_type) errors.push('กรุณาเลือกประเภทข้อยกเว้น ATB (ปฏิเสธ หรือไม่มีแผนให้)');
     if (!String(c.atb_exception_reason || '').trim()) errors.push('กรุณาระบุรายละเอียดข้อยกเว้น ATB');
   }
   if (c.fluid_contra === '1' && !String(c.fluid_contra_reason || '').trim()) errors.push('กรุณาระบุข้อห้ามในการให้ IV fluid 30 ml/kg');
+  const ml = numOf(c.fluid_1h_ml), w = numOf(c.weight);
+  if (ml != null && !isNaN(ml) && w == null) errors.push('กรอกปริมาณ IV fluid แล้ว กรุณากรอกน้ำหนักผู้ป่วยด้วย (ใช้คำนวณ ml/kg)');
+  const low = fluidLowPerKg(c);
+  if (low != null) warnings.push('ปริมาณ fluid ' + ml + ' ml = ' + (Math.round(low * 10) / 10) + ' ml/kg ต่ำกว่า ' + RULES.FLUID_LOW_ML_PER_KG + ' ml/kg อาจกรอกเป็นอัตรา ml/hr ช่องนี้ต้องเป็นปริมาณรวมที่เข้าไปจริงภายใน 60 นาที');
+  if (c.lactate_sent === '0' && String(c.lactate_value || '').trim()) errors.push('เลือก "ไม่ส่ง lactate" แต่มีผล lactate เลือกอย่างใดอย่างหนึ่ง');
+  if (c.lactate_sent === 'unknown' && String(c.lactate_value || '').trim()) warnings.push('มีผล lactate แต่เลือก "ไม่ทราบ" ว่าส่งหรือไม่ ควรเปลี่ยนเป็น "ส่ง"');
   if (c.icu_dt && c.icu_needed !== '1') errors.push('มีเวลาเข้ารับการดูแลภาวะวิกฤต แต่ไม่ได้ติ๊กว่าต้องได้รับการดูแลภาวะวิกฤต');
   if (c.discharge_status && !hasDate(c.discharge_dt)) errors.push('เลือกสถานะจำหน่ายแล้ว กรุณากรอกวันจำหน่าย');
   if (hasDate(c.discharge_dt) && !c.discharge_status) errors.push('กรอกวันจำหน่ายแล้ว กรุณาเลือกสถานะจำหน่าย');
 
-  const atbMin = mins(c.dx_dt, c.atb1_dt);
-  if (atbMin != null && atbMin < -RULES.ATB_MIN) warnings.push('ให้ ATB ก่อนเวลาวินิจฉัย ' + Math.round(-atbMin) + ' นาที ระบบนับว่าผ่าน แต่ควรทบทวน');
-  if (mins(c.hc1_dt, c.atb1_dt) === 0) warnings.push('เวลาเจาะ H/C กับเวลาให้ ATB เป็นเวลาเดียวกัน ระบบนับว่า H/C ก่อน ATB');
-  if (c.atb1_dt && !c.atb1_name) warnings.push('มีเวลาให้ ATB แต่ยังไม่ระบุชื่อยา');
+  const atbMin = evaluate(c).atbMin;
+  if (atbMin != null && atbMin < -RULES.ATB_MIN && atbMin >= -RULES.NEXTDAY_MIN) warnings.push('ให้ ATB ก่อนเวลาวินิจฉัย ' + Math.round(-atbMin) + ' นาที ระบบนับว่าผ่าน แต่ควรทบทวน');
+  const ae = atbEarliest(c);
+  if (ae.t != null && mins(c.hc1_dt, ae.t) === 0) warnings.push('เวลาเจาะ H/C กับเวลาให้ ATB เป็นเวลาเดียวกัน ระบบนับว่า H/C ก่อน ATB');
+  if ((c.atb1_dt && !c.atb1_name) || (c.atb2_dt && !c.atb2_name)) warnings.push('มีเวลาให้ ATB แต่ยังไม่ระบุชื่อยา');
   if (c.discharge_status === 'refer' && !String(c.refer_to || '').trim()) warnings.push('ยังไม่ระบุ รพ. ที่ refer');
-  return { errors: errors, warnings: warnings };
+  return { errors: errors, warnings: warnings, nextDay: nextDay };
 }
 /* ===== จบกฎตัวชี้วัด ===== */
 
@@ -568,12 +657,21 @@ function agg(list) {
     shock: list.filter(c => c.severity === 'shock').length,
     atb: k('atb'), hc: k('hc'), fluid: k('fluid'), icu: k('icu'),
     hc2: flagN(x => !!x.c.hc1_dt && !!x.c.hc2_dt),
-    lactate: flagN(x => x.r.lactate),
+    lactate: { n: treat.filter(x => x.r.lactate === 'pass').length, d: treat.length, miss: treat.filter(x => x.r.lactate === 'missing').length, fail: treat.filter(x => x.r.lactate === 'fail').length },
     culture: flagN(x => x.c.culture_other === '1'),
     map: flagN(x => x.c.map65 === '1'),
     bundle: k('bundle'),
     medAtb: median(atbTimes)
   };
+}
+/* เคสที่ต้องทบทวน = ไม่ผ่านตัวชี้วัดจริง · เคสที่ต้องแก้ข้อมูล = ข้อมูลไม่ครบหรือน่าสงสัย (แยกกัน เคสเดียวอยู่ได้ทั้งสองรายการ) */
+const REVIEW_KEYS = ['atb', 'hc', 'fluid', 'icu'];
+const needsReview = r => REVIEW_KEYS.some(k => r[k] === 'fail') || r.lactate === 'fail';
+const needsFix = r => r.issues.length > 0;
+const CMP_ITEMS = [['dx', 'เวลาวินิจฉัย (dx)'], ['atb', 'เวลาให้ ATB'], ['hc', 'เวลาเจาะ H/C'], ['weight', 'น้ำหนัก'], ['lactate', 'lactate (ส่ง/ไม่ส่ง)'], ['outcome', 'outcome (สถานะจำหน่าย)']];
+function completeness(list) {
+  const ev = list.map(c => evaluate(c));
+  return CMP_ITEMS.map(([k, lab]) => { const pool = ev.filter(r => r.cmp[k] !== null); return { k, lab, n: pool.filter(r => r.cmp[k]).length, d: pool.length }; });
 }
 function inPeriod(c, fy, period) {
   if (fyOf(c.dx_dt) !== fy) return false;
@@ -582,7 +680,7 @@ function inPeriod(c, fy, period) {
   return toDate(c.dx_dt).getMonth() === +period.slice(1);
 }
 function passFilters(c) {
-  if (S.ward !== 'all' && c.ward !== S.ward) return false;
+  if (S.ward !== 'all' && wardOf(c) !== S.ward) return false;
   if (S.sev !== 'all' && c.severity !== S.sev) return false;
   return true;
 }
@@ -612,7 +710,7 @@ function viewDash() {
     <div class="val">${fmtPct(pct(o.n, o.d))}</div>
     <div class="fr num">${o.n} / ${o.d} ราย${o.miss ? ` · <span class="flag">ไม่ลงเวลา ${o.miss}</span>` : ''}</div>${sub ? `<div class="fr">${sub}</div>` : ''}</div>`;
   const monthOpts = FY_MONTHS.map(m => `<option value="m${m}" ${S.period === 'm' + m ? 'selected' : ''}>${TH_MON[m]}</option>`).join('');
-  const wardSet = [...new Set([...WARDS, ...S.cases.map(c => c.ward).filter(Boolean)])];
+  const wardSet = [...new Set([...WARDS, ...S.cases.map(wardOf).filter(Boolean)])];
 
   return `<div class="stack">
   <section class="panel filters">
@@ -640,9 +738,11 @@ function viewDash() {
     ${viewBundle(A)}
   </div>
 
+  ${viewCompleteness(list)}
+
   <div class="trio">
     ${barPanel('แหล่งที่สงสัยการติดเชื้อ', 'หนึ่งเคสเลือกได้หลายแหล่ง', countBy(list, c => (c.source || '').split(',').filter(Boolean).map(s => SRC[s] || s)), list.length)}
-    ${barPanel('แยกตามหอผู้ป่วย', 'จำนวนเคสที่พบในแต่ละหอ', countBy(list, c => [c.ward || 'ไม่ระบุ']), list.length)}
+    ${barPanel('แยกตามหอผู้ป่วย', 'จำนวนเคสที่พบในแต่ละหอ', countBy(list, c => [wardOf(c) || 'ไม่ระบุ']), list.length)}
     ${barPanel('ผลการรักษา (Discharge status)', 'ร้อยละของผู้ป่วยทั้งหมดในช่วงที่เลือก', countBy(list, c => [c.discharge_status ? (DIS[c.discharge_status] || c.discharge_status) : 'ยังไม่จำหน่าย'], DISCHARGE.map(d => d[1]).concat('ยังไม่จำหน่าย')), list.length)}
   </div>
 
@@ -746,6 +846,17 @@ function viewBundle(A) {
     <div class="tip" hidden></div></section>`;
 }
 
+function viewCompleteness(list) {
+  const rows = completeness(list);
+  const row = (o, i) => { const v = pct(o.n, o.d); return `<div class="bu-row"><span class="bu-lab">${o.lab}</span>
+      <div class="bu-track" data-tip="${o.lab}: ${o.n}/${o.d} ราย"><div class="bu-fill ${v != null && v < 80 ? 'low' : ''}" style="--i:${i};width:${v || 0}%"></div></div>
+      <span class="n">${fmtPct(v)}</span></div>`; };
+  const nFix = list.filter(c => needsFix(evaluate(c))).length;
+  return `<section class="panel chart"><div class="phead"><div><h2>ความครบของข้อมูล</h2><p class="sub">ร้อยละของเคสในช่วงที่เลือกที่บันทึกข้อมูลสำคัญครบ (สีส้ม = ต่ำกว่า 80%) · ATB/H/C ไม่นับเคสที่มีข้อยกเว้น ATB · outcome ต่ำได้ถ้ายังไม่จำหน่าย</p></div></div>
+    <div class="bundle">${rows.map(row).join('')}</div>
+    <div class="sub" style="margin-top:8px">${nFix ? `มี ${nFix} จาก ${list.length} ราย ที่ต้องแก้ข้อมูล` : 'ไม่มีเคสที่ต้องแก้ข้อมูล'}</div>
+    <div class="tip" hidden></div></section>`;
+}
 function viewReport() {
   const Q = [1, 2, 3, 4].map(q => agg(scoped('q' + q)));
   const Y = agg(scoped('all'));
@@ -812,23 +923,26 @@ function miniLine(key, label, months) {
     <div class="tip" hidden></div></div>`;
 }
 function viewReview(list) {
-  const flagged = list.map(c => ({ c, r: evaluate(c) })).filter(x => ['atb', 'hc', 'fluid', 'icu'].some(k => x.r[k] === 'fail' || x.r[k] === 'missing'))
-    .sort((a, b) => new Date(b.c.dx_dt) - new Date(a.c.dx_dt));
+  const ev = list.map(c => ({ c, r: evaluate(c) })).sort((a, b) => new Date(b.c.dx_dt) - new Date(a.c.dx_dt));
+  const review = ev.filter(x => needsReview(x.r)), fix = ev.filter(x => needsFix(x.r));
   const open = S.cases.filter(c => !c.discharge_status).sort((a, b) => new Date(a.dx_dt) - new Date(b.dx_dt));
-  return `<section class="panel"><div class="phead"><div><h2>เคสที่ต้องทบทวน</h2><p class="sub">ไม่ผ่านหรือไม่ลงเวลาอย่างน้อยหนึ่งตัวชี้วัด ในช่วงที่เลือก (${flagged.length} ราย)</p></div></div>
-    ${flagged.length ? `<div class="cases">${flagged.slice(0, 30).map(x => caseCard(x.c, x.r)).join('')}</div>` : '<div class="empty">ไม่มีเคสที่ต้องทบทวน</div>'}
+  return `<section class="panel"><div class="phead"><div><h2>เคสที่ต้องแก้ข้อมูล</h2><p class="sub">ข้อมูลไม่ครบหรือน่าสงสัย ต้องกลับไปแก้ก่อนนำตัวชี้วัดไปใช้ (${fix.length} ราย)</p></div></div>
+    ${fix.length ? `<div class="cases">${fix.slice(0, 30).map(x => caseCard(x.c, x.r, 'fix')).join('')}</div>` : '<div class="empty">ไม่มีเคสที่ต้องแก้ข้อมูล</div>'}
+  </section>
+  <section class="panel"><div class="phead"><div><h2>เคสที่ต้องทบทวน</h2><p class="sub">ข้อมูลครบพอตัดสินแล้วว่าไม่ผ่านอย่างน้อยหนึ่งตัวชี้วัด ในช่วงที่เลือก (${review.length} ราย)</p></div></div>
+    ${review.length ? `<div class="cases">${review.slice(0, 30).map(x => caseCard(x.c, x.r)).join('')}</div>` : '<div class="empty">ไม่มีเคสที่ต้องทบทวน</div>'}
   </section>
   <section class="panel"><div class="phead"><div><h2>รอบันทึก outcome</h2><p class="sub">เคสที่ยังไม่ได้ลงสถานะจำหน่าย ทุกปีงบ (${open.length} ราย)</p></div></div>
     ${open.length ? `<div class="cases">${open.slice(0, 30).map(c => caseCard(c, evaluate(c))).join('')}</div>` : '<div class="empty">บันทึก outcome ครบทุกเคสแล้ว</div>'}
   </section>`;
 }
-function caseCard(c, r) {
+function caseCard(c, r, mode) {
   const status = c.discharge_status ? `<span class="pill ${r.dead ? 'fail' : 'na'}">${esc(DIS[c.discharge_status] || c.discharge_status)}</span>` : '<span class="pill open">รอ outcome</span>';
   return `<button class="case" data-id="${esc(c.id)}">
     <div><div class="t">HN <span class="num">${esc(c.hn || '')}</span>${c.patient_name ? ' · ' + esc(c.patient_name) : ''}${c.severity === 'shock' ? ' · Septic shock' : ''}</div>
-    <div class="m">${fmtDT(c.dx_dt)} · ${esc(c.ward || '')}${c.age ? ` · ${c.sex === 'M' ? 'ชาย' : c.sex === 'F' ? 'หญิง' : ''} ${esc(c.age)} ปี` : ''}${c.source ? ' · ' + c.source.split(',').map(s => SRC[s] || s).join(', ') : ''}</div></div>
+    <div class="m">${fmtDT(c.dx_dt)} · ${esc(wardOf(c))}${c.age ? ` · ${c.sex === 'M' ? 'ชาย' : c.sex === 'F' ? 'หญิง' : ''} ${esc(c.age)} ปี` : ''}${c.source ? ' · ' + c.source.split(',').map(s => SRC[s] || s).join(', ') : ''}</div></div>
     <div>${status}</div>
-    <div class="pills">${pill('ATB 1 ชม.', r.atb)}${pill('H/C ก่อน ATB', r.hc)}${r.fluid !== 'na' ? pill('Fluid 30 ml/kg', r.fluid) : ''}${r.icu !== 'na' ? pill('ICU 3 ชม.', r.icu) : ''}</div>
+    <div class="pills">${mode === 'fix' ? r.issues.map(t => `<span class="pill missing">${esc(t)}</span>`).join('') : `${pill('ATB 1 ชม.', r.atb)}${pill('H/C ก่อน ATB', r.hc)}${r.fluid !== 'na' ? pill('Fluid 30 ml/kg', r.fluid) : ''}${r.icu !== 'na' ? pill('ICU 3 ชม.', r.icu) : ''}${r.lactate !== 'pass' ? pill('Lactate', r.lactate) : ''}`}</div>
   </button>`;
 }
 function bindDash() {
@@ -867,12 +981,14 @@ function bindDash() {
 function viewList() {
   const q = S.q.trim().toLowerCase();
   let list = S.cases.slice().sort((a, b) => (toDate(b.dx_dt) || 0) - (toDate(a.dx_dt) || 0));
-  if (q) list = list.filter(c => [c.hn, c.an, c.patient_name, c.ward, c.atb1_name].some(v => String(v || '').toLowerCase().includes(q)));
+  if (q) list = list.filter(c => [c.hn, c.an, c.patient_name, wardOf(c), c.atb1_name].some(v => String(v || '').toLowerCase().includes(q)));
   if (S.listFilter === 'open') list = list.filter(c => !c.discharge_status);
-  if (S.listFilter === 'flag') list = list.filter(c => { const r = evaluate(c); return ['atb', 'hc', 'fluid', 'icu'].some(k => r[k] === 'fail' || r[k] === 'missing'); });
+  if (S.listFilter === 'flag') list = list.filter(c => needsReview(evaluate(c)));
+  if (S.listFilter === 'fix') list = list.filter(c => needsFix(evaluate(c)));
   const f = (k, l, n) => `<button aria-pressed="${S.listFilter === k}" data-f="${k}">${l}${n != null ? ` <span class="cnt-badge">${n}</span>` : ''}</button>`;
   const nOpen = S.cases.filter(c => !c.discharge_status).length;
-  const nFlag = S.cases.filter(c => { const r = evaluate(c); return ['atb', 'hc', 'fluid', 'icu'].some(k => r[k] === 'fail' || r[k] === 'missing'); }).length;
+  const nFlag = S.cases.filter(c => needsReview(evaluate(c))).length;
+  const nFix = S.cases.filter(c => needsFix(evaluate(c))).length;
   setTimeout(() => {
     const qi = document.getElementById('q');
     qi.oninput = () => { S.q = qi.value; const pos = qi.selectionStart; render(); const n = document.getElementById('q'); n.focus(); n.setSelectionRange(pos, pos); };
@@ -896,7 +1012,7 @@ function viewList() {
       <td class="hn num">${esc(c.hn || '')}</td>
       <td class="pname">${esc(c.patient_name || '–')}</td>
       <td>${c.age ? esc(c.age) : '–'}${sexTxt(c) ? ' / ' + sexTxt(c) : ''}</td>
-      <td>${esc(c.ward || '–')}</td>
+      <td>${esc(wardOf(c) || '–')}</td>
       <td class="num nowrap">${shortDT(c.dx_dt)}</td>
       <td>${sev}</td>
       <td><span class="tag b-${r.bundle}">${BUNDLE_TXT[r.bundle]}</span></td>
@@ -910,7 +1026,7 @@ function viewList() {
       <div class="reg-tools">
         <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input id="q" type="text" placeholder="ค้นหา HN, AN, ชื่อ หรือหอผู้ป่วย" value="${esc(S.q)}" aria-label="ค้นหา"></label>
-        <div class="seg" id="lf">${f('all', 'ทั้งหมด')}${f('open', 'รอ outcome', nOpen)}${f('flag', 'ต้องทบทวน', nFlag)}</div>
+        <div class="seg" id="lf">${f('all', 'ทั้งหมด')}${f('open', 'รอ outcome', nOpen)}${f('fix', 'ต้องแก้ข้อมูล', nFix)}${f('flag', 'ต้องทบทวน', nFlag)}</div>
       </div>
     </section>
     <section class="panel reg-table">
@@ -932,6 +1048,7 @@ function openCase(id) {
 function dtField(name, label, opts = {}) {
   return `<div class="f"><div class="lb ${opts.req ? 'req' : ''}">${label}</div>
     <div class="dt"><input type="date" id="${name}__d" aria-label="${label} วันที่"><input type="time" id="${name}__t" aria-label="${label} เวลา"><button type="button" class="now" data-now="${name}">ตอนนี้</button></div>
+    ${Object.prototype.hasOwnProperty.call(EVENT_LABELS, name) ? `<label class="unk"><input type="checkbox" id="${name}__u"> ไม่ทราบเวลา</label>` : ''}
     ${opts.hint ? `<div class="hint">${opts.hint}</div>` : ''}</div>`;
 }
 const txt = (id, label, o = {}) => `<div class="f"><label for="${id}" class="${o.req ? 'req' : ''}">${label}</label><input id="${id}" type="${o.type || 'text'}" ${o.list ? `list="${o.list}"` : ''} ${o.attrs || ''}>${o.hint ? `<div class="hint">${o.hint}</div>` : ''}</div>`;
@@ -954,7 +1071,7 @@ function viewForm() {
     ${txt('an', 'AN', { attrs: 'inputmode="numeric" autocomplete="off"' })}
     ${sel('sex', 'เพศ', [['M', 'ชาย'], ['F', 'หญิง']])}
     ${txt('age', 'อายุ (ปี)', { type: 'number', attrs: 'min="0" max="120" inputmode="numeric"' })}
-    ${txt('weight', 'น้ำหนัก (kg)', { type: 'number', attrs: 'min="1" max="300" step="0.1" inputmode="decimal"', hint: 'ใช้คำนวณ fluid 30 ml/kg' })}
+    ${txt('weight', 'น้ำหนัก (kg)', { type: 'number', attrs: 'min="1" max="300" step="0.1" inputmode="decimal"', hint: 'ใช้คำนวณ fluid 30 ml/kg · จำเป็นเมื่อกรอกปริมาณ fluid' })}
     ${sel('ward', 'หอผู้ป่วย', WARDS)}
   </div><div class="grid" style="margin-top:12px">${dtField('admit_dt', 'วันเวลา Admit')}</div></fieldset>
 
@@ -983,7 +1100,7 @@ function viewForm() {
 
   <fieldset><legend>3. Hemodynamic resuscitation <span class="who">· พยาบาลเป็นผู้กรอก</span></legend>
   <div class="grid">${sel('fluid_type', 'IV fluid', FLUIDS)}${dtField('fluid_start_dt', 'เวลาเริ่มให้ IV fluid')}
-    ${txt('fluid_1h_ml', 'ปริมาณ fluid ที่เข้าไปจริงภายใน 60 นาทีหลังวินิจฉัย (ml)', { type: 'number', attrs: 'min="0" max="10000" step="50" inputmode="numeric"', hint: 'นับเฉพาะที่หยดเข้าไปแล้ว ไม่ใช่ปริมาณที่สั่ง · <span id="fluidHint">กรอกน้ำหนักเพื่อดูเป้าหมาย 30 ml/kg</span>' })}</div>
+    ${txt('fluid_1h_ml', 'ปริมาณ fluid ที่เข้าไปจริงภายใน 60 นาทีหลังวินิจฉัย (ml)', { type: 'number', attrs: 'min="0" max="10000" step="50" inputmode="numeric"', hint: 'ปริมาณรวม (ml) ไม่ใช่อัตรา ml/hr · นับเฉพาะที่หยดเข้าไปแล้ว ไม่ใช่ปริมาณที่สั่ง · <span id="fluidHint">กรอกน้ำหนักเพื่อดูเป้าหมาย 30 ml/kg</span>' })}</div>
   <div class="checks" style="margin-top:10px">${chk('fluid_contra', 'มีข้อห้าม/ข้อจำกัดในการให้ 30 ml/kg (ไม่นับในตัวชี้วัด fluid)')}</div>
   <div class="grid" style="margin-top:10px" id="fluidReasonBox" hidden>${txt('fluid_contra_reason', 'ระบุข้อห้าม', { req: true, attrs: 'placeholder="เช่น CHF EF 25%, ESRD on HD, ภาวะน้ำเกิน"' })}</div>
   <div class="subhead">Inotropic / vasopressor</div>
@@ -994,7 +1111,9 @@ function viewForm() {
   </fieldset>
 
   <fieldset><legend>4. Sepsis checklist <span class="who">· แพทย์เป็นผู้กรอก</span></legend>
-  <div class="checks">${chk('lactate_sent', 'ส่ง Serum lactate')}${chk('culture_other', 'UA, U/C, Sputum G/S, C/S ตาม source')}${chk('map65', 'Keep target MAP ≥ 65')}</div>
+  <div class="grid">${sel('lactate_sent', 'Serum lactate', [['1', 'ส่ง'], ['0', 'ไม่ส่ง'], ['unknown', 'ไม่ทราบ']])}</div>
+  <div class="hint" style="margin-top:4px">"ไม่ทราบ" = ข้อมูลไม่ครบ (ไม่นับว่าไม่ผ่าน) · ยังไม่เลือกถือว่าไม่ครบเช่นกัน</div>
+  <div class="checks" style="margin-top:10px">${chk('culture_other', 'UA, U/C, Sputum G/S, C/S ตาม source')}${chk('map65', 'Keep target MAP ≥ 65')}</div>
   <div class="grid" style="margin-top:10px">${txt('lactate_value', 'ผล lactate (mmol/L)', { type: 'number', attrs: 'min="0" step="0.1" inputmode="decimal"' })}</div>
   </fieldset>
 
@@ -1014,24 +1133,31 @@ function viewForm() {
 }
 
 const DT_FIELDS = ['admit_dt', 'dx_dt', 'hc1_dt', 'hc2_dt', 'atb1_dt', 'atb2_dt', 'fluid_start_dt', 'vaso1_dt', 'vaso2_dt', 'icu_dt', 'discharge_dt'];
-const TEXT_FIELDS = ['patient_name', 'atb_exception_type', 'atb_exception_reason', 'hc_not_done_reason', 'fluid_contra_reason', 'hn', 'an', 'sex', 'age', 'weight', 'ward', 'severity', 'onset', 'mews', 'source_other', 'hc1_site', 'hc2_site', 'atb1_name', 'atb2_name', 'fluid_type', 'fluid_1h_ml', 'vaso1_name', 'vaso2_name', 'o2', 'lactate_value', 'discharge_status', 'refer_to', 'icd_principal', 'icd_comorbid', 'recorder', 'note'];
-const BOOL_FIELDS = ['sirs', 'qsofa', 'hc_not_done', 'atb_refused', 'fluid_contra', 'central_line', 'foley', 'lactate_sent', 'culture_other', 'map65', 'icu_needed'];
+const TEXT_FIELDS = ['patient_name', 'atb_exception_type', 'atb_exception_reason', 'hc_not_done_reason', 'fluid_contra_reason', 'hn', 'an', 'sex', 'age', 'weight', 'ward', 'severity', 'onset', 'mews', 'source_other', 'hc1_site', 'hc2_site', 'atb1_name', 'atb2_name', 'fluid_type', 'fluid_1h_ml', 'vaso1_name', 'vaso2_name', 'o2', 'lactate_value', 'lactate_sent', 'discharge_status', 'refer_to', 'icd_principal', 'icd_comorbid', 'recorder', 'note'];
+const BOOL_FIELDS = ['sirs', 'qsofa', 'hc_not_done', 'atb_refused', 'fluid_contra', 'central_line', 'foley', 'culture_other', 'map65', 'icu_needed'];
 
 function readForm() {
   const o = S.editing ? { id: S.editing.id } : {};
   const $ = id => document.getElementById(id);
   TEXT_FIELDS.forEach(k => o[k] = ($(k).value || '').trim());
   BOOL_FIELDS.forEach(k => o[k] = $(k).checked ? '1' : '');
-  DT_FIELDS.forEach(k => { const d = $(k + '__d').value, t = $(k + '__t').value; o[k] = d && t ? `${d}T${t}` : (d || ''); });
+  const unk = [];
+  DT_FIELDS.forEach(k => {
+    const d = $(k + '__d').value, t = $(k + '__t').value, u = $(k + '__u');
+    if (u && u.checked) { o[k] = d || ''; unk.push(k); } else o[k] = d && t ? `${d}T${t}` : (d || '');
+  });
+  o.time_unknown = unk.join(',');
   o.source = [...document.querySelectorAll('input[name=source]:checked')].map(i => i.value).join(',');
   o.icd_principal = o.icd_principal.toUpperCase(); o.icd_comorbid = o.icd_comorbid.toUpperCase();
   return o;
 }
 function fillForm(c) {
   const $ = id => document.getElementById(id);
-  TEXT_FIELDS.forEach(k => { if (k !== 'recorder' && c[k] != null) $(k).value = c[k]; });
+  TEXT_FIELDS.forEach(k => { if (k !== 'recorder' && c[k] != null) $(k).value = k === 'ward' ? wardOf(c) : c[k]; });
   BOOL_FIELDS.forEach(k => $(k).checked = c[k] === '1');
   DT_FIELDS.forEach(k => { if (c[k]) { const [d, t] = c[k].split('T'); $(k + '__d').value = d; $(k + '__t').value = (t || '').slice(0, 5); } });
+  const unk = unknownTimes(c);
+  DT_FIELDS.forEach(k => { const u = $(k + '__u'); if (u) { u.checked = unk.includes(k); $(k + '__t').disabled = u.checked; } });
   const srcs = (c.source || '').split(',');
   document.querySelectorAll('input[name=source]').forEach(i => i.checked = srcs.includes(i.value));
 }
@@ -1049,11 +1175,13 @@ function updateLive() {
   const dup = findDuplicate(o);
   const warns = v.warnings.slice();
   if (dup) warns.unshift(`มีเคส HN ${o.hn} วินิจฉัยเมื่อ ${fmtDT(dup.dx_dt)} อยู่แล้ว อาจเป็นเคสซ้ำ`);
+  const ndMap = Object.fromEntries(v.nextDay.map(x => [x.text, x.key]));
+  const li = w => `<li>${esc(w)}${ndMap[w] ? ` <button type="button" class="btn nd" data-nextday="${ndMap[w]}">เลื่อนเป็นวันถัดไป</button>` : ''}</li>`;
   $('live').innerHTML = `<div class="pills">
     <span class="pill ${r.atb}">ATB ภายใน 1 ชม.: ${PILL_TXT[r.atb]}${atbTxt}</span>
-    ${pill('H/C ก่อน ATB', r.hc)}${pill('Fluid 30 ml/kg', r.fluid)}${r.icu !== 'na' ? pill('ภาวะวิกฤต 3 ชม.', r.icu) : ''}${pill('Bundle 4 ข้อ', r.bundle)}
+    ${pill('H/C ก่อน ATB', r.hc)}${pill('Fluid 30 ml/kg', r.fluid)}${pill('Lactate', r.lactate)}${r.icu !== 'na' ? pill('ภาวะวิกฤต 3 ชม.', r.icu) : ''}${pill('Bundle 4 ข้อ', r.bundle)}
     ${o.discharge_status ? `<span class="pill na">${esc(DIS[o.discharge_status])}</span>` : '<span class="pill open">ยังไม่ลง outcome</span>'}
-  </div>${warns.length ? `<ul class="vlist warn">${warns.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}`;
+  </div>${warns.length ? `<ul class="vlist warn">${warns.map(li).join('')}</ul>` : ''}`;
   return v;
 }
 function findDuplicate(o) {
@@ -1077,8 +1205,26 @@ function bindForm() {
     t.addEventListener('change', () => { if (t.value && !dd.value) dd.value = document.getElementById('dx_dt__d').value || localNow()[0]; updateLive(); });
   });
   form.addEventListener('click', e => {
+    const nd = e.target.closest('[data-nextday]');
+    if (nd) {
+      const dd = document.getElementById(nd.dataset.nextday + '__d'); const x = toDate(dd.value);
+      if (x) { x.setDate(x.getDate() + 1); dd.value = `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`; }
+      updateLive(); return;
+    }
     const b = e.target.closest('[data-now]'); if (!b) return;
-    const [d, t] = localNow(); document.getElementById(b.dataset.now + '__d').value = d; document.getElementById(b.dataset.now + '__t').value = t; updateLive();
+    const [d, t] = localNow(); document.getElementById(b.dataset.now + '__d').value = d; document.getElementById(b.dataset.now + '__t').value = t;
+    const u = document.getElementById(b.dataset.now + '__u'); if (u) { u.checked = false; document.getElementById(b.dataset.now + '__t').disabled = false; }
+    updateLive();
+  });
+  // ติ๊ก "ไม่ทราบเวลา": ล้างและล็อกช่องเวลา ใช้วันที่เท่านั้น (แทนการใส่ 00:00)
+  DT_FIELDS.forEach(k => {
+    const u = document.getElementById(k + '__u'); if (!u) return;
+    u.addEventListener('change', () => {
+      const t = document.getElementById(k + '__t'), dd = document.getElementById(k + '__d');
+      t.disabled = u.checked;
+      if (u.checked) { t.value = ''; if (!dd.value) dd.value = document.getElementById('dx_dt__d').value || localNow()[0]; }
+      updateLive();
+    });
   });
   form.addEventListener('input', updateLive);
   form.addEventListener('change', updateLive);
@@ -1141,13 +1287,17 @@ function viewDefs() {
   <dl class="defs">
     <dt>เวลาเริ่มนับ (time zero)</dt><dd>วันเวลาที่แพทย์วินิจฉัย Sepsis ต้องกรอกทั้งวันและเวลา ทุกตัวชี้วัดที่เป็นเวลานับจากจุดนี้</dd>
     <dt>ข้อมูลไม่ครบ</dt><dd>ถ้าเวลาที่ต้องใช้คำนวณไม่ได้กรอก หรือกรอกแค่วันที่ไม่มีเวลา ระบบจะไม่ตัดสินผ่านหรือไม่ผ่าน แต่นับเป็น "ไม่ลงเวลา" ซึ่งอยู่ในตัวหารและไม่อยู่ในตัวตั้ง เพื่อให้เห็นปัญหาการลงบันทึก</dd>
-    <dt>อัตราการได้รับ Antibiotic ภายใน 1 ชม.</dt><dd>เวลาเริ่มให้ ATB ชนิดที่ 1 ลบเวลาวินิจฉัย ไม่เกิน 60 นาทีถือว่าผ่าน ถ้าให้ ATB ก่อนเวลาวินิจฉัยนับว่าผ่าน และถ้าก่อนเกิน 60 นาทีจะมีคำเตือนให้ทบทวน เคสที่มีข้อยกเว้น (ผู้ป่วย/ญาติปฏิเสธ หรือแพทย์ไม่มีแผนให้ ATB) ไม่นับทั้งตัวตั้งและตัวหาร และต้องระบุเหตุผล</dd>
-    <dt>อัตราการเจาะ H/C ก่อนให้ Antibiotic</dt><dd>เวลาเจาะ H/C ขวดที่ 1 ต้องไม่ช้ากว่าเวลาเริ่ม ATB ชนิดที่ 1 เวลาเดียวกันนับว่าผ่าน เคสที่ติ๊ก "ไม่ได้เจาะ H/C" นับว่าไม่ผ่าน และต้องระบุเหตุผล</dd>
+    <dt>อัตราการได้รับ Antibiotic ภายใน 1 ชม.</dt><dd>ใช้เวลา ATB ที่เร็วที่สุดของชนิดที่ 1 และ 2 ลบเวลาวินิจฉัย ไม่เกิน 60 นาทีถือว่าผ่าน (ถ้ามี ATB ตัวใดที่ไม่ทราบเวลา และตัวที่ทราบเวลาเกิน 60 นาที จะนับเป็นข้อมูลไม่ครบ ไม่ตัดสินว่าไม่ผ่าน) ถ้าให้ ATB ก่อนเวลาวินิจฉัยนับว่าผ่าน และถ้าก่อนเกิน 60 นาทีจะมีคำเตือนให้ทบทวน เคสที่มีข้อยกเว้น (ผู้ป่วย/ญาติปฏิเสธ หรือแพทย์ไม่มีแผนให้ ATB) ไม่นับทั้งตัวตั้งและตัวหาร และต้องระบุเหตุผล</dd>
+    <dt>อัตราการเจาะ H/C ก่อนให้ Antibiotic</dt><dd>เวลาเจาะ H/C ขวดที่ 1 ต้องไม่ช้ากว่าเวลา ATB ที่เร็วที่สุด (ชนิดที่ 1 หรือ 2) เวลาเดียวกันนับว่าผ่าน เคสที่ติ๊ก "ไม่ได้เจาะ H/C" นับว่าไม่ผ่าน และต้องระบุเหตุผล</dd>
     <dt>อัตราการได้รับ IV fluid 30 ml/kg ใน 1 ชม. แรก</dt><dd>ผ่านเมื่อเริ่มให้ fluid ภายใน 60 นาทีหลังวินิจฉัย และปริมาณที่เข้าไปจริงภายใน 60 นาที ≥ 30 × น้ำหนัก (kg) ปริมาณนี้ผู้กรอกเป็นผู้ยืนยัน ให้นับเฉพาะที่หยดเข้าไปแล้ว ไม่ใช่ที่สั่ง เคสที่มีข้อห้ามไม่นับ และต้องระบุข้อห้าม</dd>
+    <dt>Serum lactate (ส่ง / ไม่ส่ง / ไม่ทราบ)</dt><dd>"ส่ง" นับว่าผ่าน "ไม่ส่ง" นับว่าไม่ผ่าน "ไม่ทราบ" และเว้นว่าง (ถ้าไม่มีผล lactate) นับเป็นข้อมูลไม่ครบ ไม่ใช่ไม่ผ่าน ข้อมูลเก่าที่เว้นว่างแต่มีผล lactate ถือว่าส่งแล้ว</dd>
+    <dt>"ไม่ทราบเวลา" และเวลา 00:00</dt><dd>ช่องเวลาของ H/C, ATB, fluid, ยากระตุ้นความดัน และภาวะวิกฤต มีช่องติ๊ก "ไม่ทราบเวลา" ให้เก็บเฉพาะวันที่ ไม่ต้องใส่ 00:00 ระบบนับเป็นข้อมูลไม่ครบ ถ้ากรอก 00:00 จะมีคำเตือน และถ้าเวลาอยู่ก่อนเวลาวินิจฉัยเกิน 12 ชม. จะถามว่าหมายถึงวันถัดไปหรือไม่ พร้อมปุ่มเลื่อนวัน</dd>
+    <dt>ความครบของข้อมูล</dt><dd>ร้อยละของเคสที่มีเวลาวินิจฉัย เวลา ATB เวลา H/C น้ำหนัก lactate (ส่ง/ไม่ส่ง) และ outcome ครบ ATB/H/C ไม่นับเคสที่มีข้อยกเว้น ATB (H/C ที่ติ๊ก "ไม่ได้เจาะ" พร้อมเหตุผลนับว่าครบ)</dd>
+    <dt>เคสที่ต้องแก้ข้อมูล / เคสที่ต้องทบทวน</dt><dd>"ต้องแก้ข้อมูล" คือข้อมูลไม่ครบหรือน่าสงสัย (เช่น ไม่มีเวลา ATB ไม่มีน้ำหนัก lactate ไม่ทราบ เวลา 00:00 วันผิด fluid ต่ำผิดปกติ) ส่วน "ต้องทบทวน" คือข้อมูลครบพอตัดสินแล้วว่าไม่ผ่านตัวชี้วัด (ATB, H/C, fluid, ภาวะวิกฤต หรือไม่ส่ง lactate) เคสหนึ่งอยู่ได้ทั้งสองรายการ</dd>
     <dt>1-hour bundle ครบ 4 ข้อ</dt><dd>ผ่านเมื่อครบทั้ง ATB ภายใน 1 ชม., H/C ก่อน ATB, ส่ง serum lactate และ IV fluid 30 ml/kg (ถ้ามีข้อห้าม ข้อ fluid ถือว่าผ่าน) ส่วน H/C ครบ 2 ขวด, culture ตาม source และ MAP ≥ 65 แสดงแยกเป็นการดูแลตาม checklist ไม่นับในสูตร bundle</dd>
     <dt>อัตราที่ได้รับการดูแลแบบภาวะวิกฤต (ระดับ 4-5) ภายใน 3 ชม.</dt><dd>คิดเฉพาะเคสที่ติ๊กว่าต้องได้รับการดูแลภาวะวิกฤต เวลาที่เข้ารับการดูแลลบเวลาวินิจฉัย ไม่เกิน 180 นาทีถือว่าผ่าน</dd>
     <dt>อัตราตาย</dt><dd>จำนวนผู้ป่วยที่เสียชีวิตรวมกับปฏิเสธการรักษาเพื่อกลับไปเสียชีวิตที่บ้าน หารด้วยผู้ป่วยที่ลงสถานะจำหน่ายแล้ว เคสที่ยังไม่ลง outcome ไม่นับในตัวหาร แสดงแยกอัตราตายของ community-acquired ด้วย</dd>
-    <dt>การตรวจข้อมูลก่อนบันทึก</dt><dd>ระบบไม่ให้บันทึกเมื่อค่าตัวเลขอยู่นอกช่วง (อายุ 0–120 ปี, น้ำหนัก 1–300 kg, fluid 0–10,000 ml, MEWS 0–20, lactate 0–30) เวลาห่างจากเวลาวินิจฉัยเกินช่วงก่อน 24 ชม. ถึงหลัง 7 วัน ข้อมูลขัดกัน หรือใช้ข้อยกเว้นโดยไม่ระบุเหตุผล ตรวจทั้งที่หน้าเว็บและฝั่ง Sheet</dd>
+    <dt>การตรวจข้อมูลก่อนบันทึก</dt><dd>ระบบไม่ให้บันทึกเมื่อค่าตัวเลขอยู่นอกช่วง (อายุ 0–120 ปี, น้ำหนัก 1–300 kg, fluid 0–10,000 ml, MEWS 0–20, lactate 0–30) กรอกปริมาณ fluid โดยไม่มีน้ำหนัก เวลาห่างจากเวลาวินิจฉัยเกินช่วงก่อน 24 ชม. ถึงหลัง 7 วัน ข้อมูลขัดกัน หรือใช้ข้อยกเว้นโดยไม่ระบุเหตุผล ตรวจทั้งที่หน้าเว็บและฝั่ง Sheet</dd>
     <dt>เคสซ้ำและการแก้ไขพร้อมกัน</dt><dd>HN เดียวกันที่วินิจฉัยห่างกันไม่ถึง 24 ชม. ต้องกดยืนยันก่อนบันทึก ถ้ามีคนแก้เคสเดียวกันไปก่อน ระบบจะไม่บันทึกทับ และให้โหลดข้อมูลล่าสุดก่อน</dd>
     <dt>ประวัติการแก้ไข</dt><dd>ทุกการเพิ่ม แก้ไข และลบ ถูกบันทึกในแท็บ Log ของ Google Sheet พร้อมเวลา ชื่อผู้บันทึก และค่าที่เปลี่ยน การลบเป็นการทำเครื่องหมายไว้ ข้อมูลยังอยู่ใน Sheet</dd>
     <dt>ปีงบประมาณ / ไตรมาส</dt><dd>จัดตามวันที่วินิจฉัย ปีงบประมาณเริ่ม 1 ต.ค. ไตรมาส 1 = ต.ค.–ธ.ค., 2 = ม.ค.–มี.ค., 3 = เม.ย.–มิ.ย., 4 = ก.ค.–ก.ย.</dd>
@@ -1184,14 +1334,14 @@ const Demo = (() => {
       const src = srcKeys[Math.floor(r() * srcKeys.length)];
       out.push({
         id: 'demo-' + i, patient_name: ['นาย', 'นาง', 'น.ส.'][Math.floor(r() * 3)] + ['สมชาย', 'สมศรี', 'วิชัย', 'มาลี', 'บุญส่ง', 'ปราณี', 'สุนทร', 'อำไพ'][Math.floor(r() * 8)] + ' ' + ['ใจดี', 'รัตนมงคล', 'สุขเกษม', 'แซ่ตั้ง', 'อภิวัฒนา', 'บำรุงจิต'][Math.floor(r() * 6)] + '', hn: String(90000000 + Math.floor(r() * 999999)), an: '', sex: r() < 0.5 ? 'M' : 'F', age: String(Math.round(25 + r() * 70)), weight: String(w),
-        ward: ['หอผู้ป่วยในชาย', 'หอผู้ป่วยในหญิง', 'ER'][Math.floor(r() * 3)], admit_dt: iso(new Date(dx.getTime() - r() * 3 * 36e5)),
+        ward: ['หอผู้ป่วยสามัญ', 'หอผู้ป่วยสามัญ', 'หอผู้ป่วยพิเศษ', 'ER'][Math.floor(r() * 4)], admit_dt: iso(new Date(dx.getTime() - r() * 3 * 36e5)),
         dx_dt: iso(dx), severity: shock ? 'shock' : 'sepsis', onset: r() < 0.85 ? 'community' : 'hospital', sirs: '1', qsofa: r() < 0.5 ? '1' : '', mews: String(4 + Math.floor(r() * 4)),
         source: src + (r() < 0.12 ? ',uti' : ''), hc1_dt: missAtb ? '' : iso(hc), hc1_site: 'Rt arm', hc2_dt: missAtb || r() < 0.2 ? '' : iso(new Date(hc.getTime() + 5 * 6e4)), hc2_site: 'Lt arm', hc_not_done: '',
         culture_other: r() < 0.85 ? '1' : '', map65: shock ? (r() < 0.8 ? '1' : '') : '1',
         atb1_name: drugs[Math.floor(r() * drugs.length)], atb1_dt: missAtb ? '' : iso(atb), atb_refused: '',
         fluid_type: 'NSS', fluid_start_dt: iso(new Date(dx.getTime() + 10 * 6e4)), fluid_1h_ml: fluidMl, fluid_contra: contra ? '1' : '',
         vaso1_name: shock ? 'Norepinephrine (Levophed)' : '', vaso1_dt: shock ? iso(new Date(dx.getTime() + 50 * 6e4)) : '',
-        lactate_sent: r() < 0.7 ? '1' : '', icu_needed: icu ? '1' : '', icu_dt: icu ? iso(new Date(dx.getTime() + (60 + r() * 200) * 6e4)) : '',
+        lactate_sent: (lr => lr < 0.7 ? '1' : lr < 0.9 ? '0' : 'unknown')(r()), icu_needed: icu ? '1' : '', icu_dt: icu ? iso(new Date(dx.getTime() + (60 + r() * 200) * 6e4)) : '',
         discharge_dt: closedCase ? iso(dis) : '', discharge_status: closedCase ? (died ? 'dead' : ['improve', 'improve', 'complete', 'refer'][Math.floor(r() * 4)]) : '',
         icd_principal: { resp: 'J189', uti: 'N390', gi: 'A099', skin: 'L031', unknown: 'A419', cns: 'G039' }[src]
       });
